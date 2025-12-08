@@ -12,8 +12,8 @@ const LoginPage = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const navigate = useNavigate();
-    const oficial_email = "oficial@dailybalance.com";
-    const oficial_password = "123456";
+    const oficial_email = "jhonkeifyd7@gmail.com";
+    const oficial_password = "12345";
 
     const handleLogin = () => {
         if (email === oficial_email && password === oficial_password) {
