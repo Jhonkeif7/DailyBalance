@@ -3,8 +3,8 @@ import { Input } from "../../components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "../../components/ui/Card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/Button";
-import backgroundImage from "@/assets/background_dailybalance.jpg";
-import logo from "@/assets/logo_dailybalance.jpg";
+import backgroundImage from "frontend/src/assets/background_dailybalance.jpg";
+import logo from "frontend/src/assets/logo_dailybalance.jpg";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
