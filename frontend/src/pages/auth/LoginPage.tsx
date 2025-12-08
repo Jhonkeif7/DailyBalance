@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Input } from "../../components/ui/Input";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardAction, CardFooter } from "../../components/ui/Card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "../../components/ui/Card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/Button";
 import backgroundImage from "@/assets/Background_Dailybalance.jpg";
