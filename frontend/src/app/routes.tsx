@@ -6,7 +6,7 @@ import AppLayout from "@/components/layout/AppLayout";
 // Pages
 import LoginPage from "@/pages/auth/LoginPage";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
-import DailyPage from "@/pages/time/DailyPage";
+import DailyPage from "@/pages/to-do/DailyPage";
 import CurrencyPage from "@/pages/finance/CurrencyPage";
 import UserProfilePage from "@/pages/user/UserProfilePage";
 import SettingsPage from "@/pages/user/SettingsPage";
