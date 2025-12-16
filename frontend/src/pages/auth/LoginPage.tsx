@@ -12,8 +12,8 @@ const LoginPage = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const navigate = useNavigate();
-    const oficial_email = "jhonkeifyd7@gmail.com";
-    const oficial_password = "12345";
+    const oficial_email = "oficial@dailybalance.com";
+    const oficial_password = "123456";
 
     const handleLogin = () => {
         if (email === oficial_email && password === oficial_password) {
@@ -76,6 +76,11 @@ const LoginPage = () => {
                     <Button variant="link" className="text-[#597347] cursor-pointer">
                     Crear una cuenta
                     </Button>
+                    <div className="text-white text-center border-t border-white/20 pt-4">
+                        <h2 className="text-xl font-bold mb-2">Credenciales de prueba</h2>
+                        <p className="text-sm mb-1">Correo: {oficial_email}</p>
+                        <p className="text-sm">Contraseña: {oficial_password}</p>
+                    </div>
                 </CardFooter>
             </Card>
         </div>
