@@ -7,13 +7,11 @@ import {
     Wallet,
     User,
     Settings,
-    HelpCircle,
     Search,
     LogOut,
     FileText,
     FolderOpen,
     BarChart3,
-    Plus,
 } from "lucide-react";
 
 interface NavItemProps {
