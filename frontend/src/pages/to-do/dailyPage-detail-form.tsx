@@ -326,7 +326,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
         className={`absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500/50 transition-colors z-10 group flex items-center ${isResizing ? 'bg-blue-500/50' : ''}`}
       >
         <div className="absolute left-0 w-4 h-16 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity -translate-x-1/2">
-          <GripVertical className="w-4 h-4 text-muted-foreground" />
+          <GripVertical className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
         </div>
       </div>
 
@@ -339,9 +339,9 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
             className="flex-shrink-0 mt-1 cursor-pointer hover:scale-110 transition-transform"
           >
             {selectedTask.completed ? (
-              <CheckCircle2 className="w-6 h-6 text-blue-500" />
+              <CheckCircle2 className="w-6 h-6 text-blue-500" aria-hidden="true" />
             ) : (
-              <Circle className="w-6 h-6 text-muted-foreground hover:text-blue-500" />
+              <Circle className="w-6 h-6 text-muted-foreground hover:text-blue-500" aria-hidden="true" />
             )}
           </button>
 
@@ -351,7 +351,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
               value={selectedTask.title}
               onChange={(e) => updateTask({ ...selectedTask, title: e.target.value })}
               className={`w-full text-base font-medium border-none outline-none bg-transparent cursor-text hover:bg-muted/30 focus:bg-muted/50 rounded px-1 py-0.5 transition-colors ${selectedTask.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}
-              placeholder="Título de la tarea"
+                  placeholder="Título de la tarea…"
             />
           </div>
 
@@ -361,9 +361,9 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
             className="flex-shrink-0 mt-1 cursor-pointer hover:scale-110 transition-transform"
           >
             {selectedTask.importance === 'high' ? (
-              <Star className="w-5 h-5 fill-blue-500 text-blue-500" />
+              <Star className="w-5 h-5 fill-blue-500 text-blue-500" aria-hidden="true" />
             ) : (
-              <Star className="w-5 h-5 text-muted-foreground hover:text-blue-500" />
+              <Star className="w-5 h-5 text-muted-foreground hover:text-blue-500" aria-hidden="true" />
             )}
           </button>
 
@@ -416,7 +416,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
               onClick={() => addStep()}
               className="w-full flex items-center gap-3 px-4 py-3 text-blue-500 hover:bg-muted/30 transition-colors cursor-pointer"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-5 h-5" aria-hidden="true" />
               <span className="text-sm">Paso siguiente</span>
             </button>
           </div>
@@ -540,7 +540,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
           {/* Add File */}
           <div className="border-b border-border">
             <ActionItem
-              icon={<Paperclip className="w-5 h-5 cursor-pointer" />}
+              icon={<Paperclip className="w-5 h-5 cursor-pointer" aria-hidden="true" />}
               label="Agregar archivo"
               onClick={() => {}}
             />
@@ -564,7 +564,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
       {/* Footer - Outside scrollable area, always at bottom */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/30 mt-auto">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Calendar className="w-4 h-4" />
+          <Calendar className="w-4 h-4" aria-hidden="true" />
           <span>Creada el {selectedTask.createdAt}</span>
         </div>
         <button
@@ -582,7 +582,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
           <DialogHeader>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
+                <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
               </div>
               <div>
                 <DialogTitle>Eliminar tarea</DialogTitle>

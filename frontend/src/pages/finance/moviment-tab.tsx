@@ -56,9 +56,11 @@ function MovimentTab({
               <Input
                 id="amount"
                 type="number"
-                placeholder="0.00"
+                inputMode="decimal"
+                placeholder="0.00…"
                 value={newTransaction.amount}
                 onChange={(e) => setNewTransaction({ ...newTransaction, amount: e.target.value })}
+                autoComplete="transaction-amount"
               />
             </div>
 
@@ -127,18 +129,22 @@ function MovimentTab({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Descripción / Notas</Label>
-            <Textarea
-              id="description"
-              placeholder="Agregar detalles..."
-              value={newTransaction.description}
-              onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Descripción / Notas</Label>
+              <Textarea
+                id="description"
+                placeholder="Agregar detalles…"
+                value={newTransaction.description}
+                onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
+                autoComplete="off"
+              />
+            </div>
 
-          <Button onClick={addTransaction} className="w-full">
-            <Plus className="mr-2 h-4 w-4" />
+          <Button
+            onClick={addTransaction}
+            className="w-full bg[#009966] dark:bg-[#009966] hover:bg-[#009966] dark:hover:bg-[#009966] text-white-foreground hover:text-white-foreground"
+          >
+            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
             Agregar Movimiento
           </Button>
         </CardContent>
@@ -151,7 +157,10 @@ function MovimentTab({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {transactions.map((transaction) => {
+            {transactions.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No hay transacciones registradas</p>
+            ) : (
+              transactions.map((transaction) => {
               const account = accounts.find((a) => a.id === transaction.account)
               const category = categories.find((c) => c.name === transaction.category)
               const Icon = category?.icon || DollarSign
@@ -159,35 +168,36 @@ function MovimentTab({
               return (
                 <div
                   key={transaction.id}
-                  className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-card/30"
+                  className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-card/30 gap-4"
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 min-w-0 flex-1">
                     <div className={`p-3 rounded-full ${category?.color || "bg-muted"}`}>
-                      <Icon className="h-5 w-5 text-white" />
+                      <Icon className="h-5 w-5 text-white" aria-hidden="true" />
                     </div>
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="font-medium">{transaction.category}</p>
+                        <p className="font-medium truncate">{transaction.category}</p>
                         {transaction.status === "pending" && (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs shrink-0">
                             Pendiente
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-muted-foreground truncate" title={transaction.description || "Sin descripción"}>
                         {transaction.description || "Sin descripción"}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(transaction.date).toLocaleDateString("es-ES")} • {account?.name}
+                      <p className="text-xs text-muted-foreground mt-1 truncate">
+                        {new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "long", year: "numeric" }).format(new Date(transaction.date))} • {account?.name}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <p
                       className={`text-lg font-bold ${transaction.type === "income" ? "text-emerald-500" : "text-red-500"}`}
+                      style={{ fontVariantNumeric: "tabular-nums" }}
                     >
                       {transaction.type === "income" ? "+" : "-"}$
-                      {transaction.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      {new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(transaction.amount)}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {transaction.type === "income" ? "Ingreso" : "Gasto"}
@@ -195,7 +205,7 @@ function MovimentTab({
                   </div>
                 </div>
               )
-            })}
+            }))}
           </div>
         </CardContent>
       </Card>

@@ -62,9 +62,9 @@ interface TaskCategoryListProps {
 // Importance Icon Component
 const ImportanceIcon = ({ level }: { level: 'normal' | 'medium' | 'high' }) => {
   if (level === 'high') {
-    return <Star className="w-4 h-4 fill-blue-500 text-blue-500" />;
+    return <Star className="w-4 h-4 fill-blue-500 text-blue-500" aria-hidden="true" />;
   }
-  return <Star className="w-4 h-4 text-muted-foreground hover:text-blue-500" />;
+  return <Star className="w-4 h-4 text-muted-foreground hover:text-blue-500" aria-hidden="true" />;
 };
 
 const TaskCategoryList: React.FC<TaskCategoryListProps> = ({
@@ -89,12 +89,14 @@ const TaskCategoryList: React.FC<TaskCategoryListProps> = ({
           <div key={key} className="border-b border-border last:border-b-0">
             <button
               onClick={() => toggleCategory(key)}
-              className="w-full flex items-center gap-2 p-4 hover:bg-muted/50 transition-colors"
+              className="w-full flex items-center gap-2 p-4 hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-expanded={expandedCategories[key]}
+              aria-label={`${expandedCategories[key] ? 'Ocultar' : 'Mostrar'} categoría ${category.name}`}
             >
               {expandedCategories[key] ? (
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                <ChevronDown className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
               ) : (
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                <ChevronRight className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
               )}
               <span className="font-medium text-foreground">{category.name}</span>
               <span className="text-sm text-muted-foreground">{categoryTasks.length}</span>
@@ -113,12 +115,13 @@ const TaskCategoryList: React.FC<TaskCategoryListProps> = ({
                         e.stopPropagation();
                         toggleTaskComplete(task.id);
                       }}
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                      aria-label={task.completed ? "Marcar como no completada" : "Marcar como completada"}
                     >
                       {task.completed ? (
-                        <CheckCircle2 className="w-5 h-5 text-blue-500 cursor-pointer" />
+                        <CheckCircle2 className="w-5 h-5 text-blue-500 cursor-pointer" aria-hidden="true" />
                       ) : (
-                        <Circle className="w-5 h-5 text-muted-foreground hover:text-blue-500 cursor-pointer" />
+                        <Circle className="w-5 h-5 text-muted-foreground hover:text-blue-500 cursor-pointer" aria-hidden="true" />
                       )}
                     </button>
 
@@ -137,18 +140,18 @@ const TaskCategoryList: React.FC<TaskCategoryListProps> = ({
                           )}
                           {task.dueDate && (
                             <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3 text-blue-500" />
+                              <Calendar className="w-3 h-3 text-blue-500" aria-hidden="true" />
                               <span>{getTaskDateLabelForList(task.dueDate)}</span>
                             </span>
                           )}
                           {task.repeat && (
                             <span className="flex items-center gap-1">
-                              <RefreshCw className="w-3 h-3 text-blue-500" />
+                              <RefreshCw className="w-3 h-3 text-blue-500" aria-hidden="true" />
                             </span>
                           )}
                           {task.reminder && (
                             <span className="flex items-center gap-1">
-                              <Bell className="w-3 h-3 text-blue-500" />
+                              <Bell className="w-3 h-3 text-blue-500" aria-hidden="true" />
                               <span>{getTaskReminderLabelForList(task)}</span>
                             </span>
                           )}

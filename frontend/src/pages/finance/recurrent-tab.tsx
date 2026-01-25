@@ -40,7 +40,7 @@ function RecurrentTab({
               >
                 <div className="flex items-center gap-4">
                   <div className={`p-3 rounded-full ${category?.color || "bg-muted"}`}>
-                    <Icon className="h-5 w-5 text-white" />
+                    <Icon className="h-5 w-5 text-white" aria-hidden="true" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -59,13 +59,24 @@ function RecurrentTab({
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-lg font-bold">
-                      ${expense.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    <p className="text-lg font-bold" style={{ fontVariantNumeric: "tabular-nums" }}>
+                      ${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(expense.amount)}
                     </p>
-                    <p className="text-xs text-muted-foreground">~${monthlyImpact.toFixed(2)}/mes</p>
+                    <p className="text-xs text-muted-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
+                      ~${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(monthlyImpact)}/mes
+                    </p>
                   </div>
-                  <Button variant="outline" size="icon" onClick={() => toggleRecurringStatus(expense.id)}>
-                    {expense.status === "active" ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => toggleRecurringStatus(expense.id)}
+                    aria-label={expense.status === "active" ? `Pausar ${expense.name}` : `Activar ${expense.name}`}
+                  >
+                    {expense.status === "active" ? (
+                      <Pause className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <Play className="h-4 w-4" aria-hidden="true" />
+                    )}
                   </Button>
                 </div>
               </div>
@@ -76,20 +87,21 @@ function RecurrentTab({
         <div className="mt-6 p-4 rounded-lg bg-muted/50">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">Impacto Mensual Total</p>
-            <p className="text-xl font-bold">
+            <p className="text-xl font-bold" style={{ fontVariantNumeric: "tabular-nums" }}>
               $
-              {recurringExpenses
-                .filter((e) => e.status === "active")
-                .reduce((sum, e) => {
-                  const monthly =
-                    e.frequency === "monthly"
-                      ? e.amount
-                      : e.frequency === "weekly"
-                        ? e.amount * 4
-                        : e.amount / 12
-                  return sum + monthly
-                }, 0)
-                .toFixed(2)}
+              {new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+                recurringExpenses
+                  .filter((e) => e.status === "active")
+                  .reduce((sum, e) => {
+                    const monthly =
+                      e.frequency === "monthly"
+                        ? e.amount
+                        : e.frequency === "weekly"
+                          ? e.amount * 4
+                          : e.amount / 12
+                    return sum + monthly
+                  }, 0)
+              )}
             </p>
           </div>
         </div>

@@ -285,7 +285,7 @@ const DailyPage = () => {
         id: Date.now(),
         completed: false,
         steps: [],
-        createdAt: new Date().toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'long' }),
+        createdAt: new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'long' }).format(new Date()),
       }]);
       setNewTask({
         title: '',
@@ -492,7 +492,7 @@ const DailyPage = () => {
     if (selected.getTime() === tomorrow.getTime()) return 'Mañana';
     if (selected.getTime() === nextWeek.getTime()) return 'Semana próxima';
     
-    return selected.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+    return new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(selected);
   };
 
   // Get formatted label for task due date in list view
@@ -529,7 +529,7 @@ const DailyPage = () => {
       case 'custom':
         if (task.reminderDate) {
           const date = parseLocalDate(task.reminderDate);
-          return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) + (task.reminderTime ? `, ${task.reminderTime}` : '');
+          return new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(date) + (task.reminderTime ? `, ${task.reminderTime}` : '');
         }
         return 'Personalizado';
       default:
@@ -565,10 +565,10 @@ const DailyPage = () => {
     }
     
     // Format as "día mes" for other dates
-    const formattedDate = selected.toLocaleDateString('es-ES', { 
+    const formattedDate = new Intl.DateTimeFormat('es-ES', { 
       day: 'numeric', 
       month: 'short' 
-    });
+    }).format(selected);
     return { label: formattedDate, icon: <Calendar className="w-4 h-4" /> };
   };
 
@@ -666,10 +666,10 @@ const DailyPage = () => {
       case 'nextweek':
         return { label: 'Semana próxima', icon: <BellRing className="w-4 h-4" /> };
       case 'custom':
-        const formattedDate = reminderDate.toLocaleDateString('es-ES', { 
+        const formattedDate = new Intl.DateTimeFormat('es-ES', { 
           day: 'numeric', 
           month: 'short' 
-        });
+        }).format(reminderDate);
         return { label: `${formattedDate}, ${reminderTime}`, icon: <Bell className="w-4 h-4" /> };
       default:
         return null;
@@ -811,10 +811,10 @@ const DailyPage = () => {
       case 'nextweek':
         return { label: 'Semana próxima', icon: <BellRing className="w-4 h-4" /> };
       case 'custom':
-        const formattedDate = taskReminderDate.toLocaleDateString('es-ES', { 
+        const formattedDate = new Intl.DateTimeFormat('es-ES', { 
           day: 'numeric', 
           month: 'short' 
-        });
+        }).format(taskReminderDate);
         return { label: `${formattedDate}, ${taskReminderTime}`, icon: <Bell className="w-4 h-4" /> };
       default:
         return null;
@@ -873,7 +873,7 @@ const DailyPage = () => {
       <div className="flex-1 p-6 overflow-y-auto">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-semibold text-foreground">Lista de actividades</h1>
+            <h1 className="text-2xl font-semibold text-foreground" style={{ textWrap: "balance" }}>Lista de actividades</h1>
           <div className="flex gap-2">
             {/* Sort Dropdown */}
             <div className="relative" ref={sortDropdownRef}>
@@ -900,7 +900,7 @@ const DailyPage = () => {
                         className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground cursor-pointer"
                         title="Quitar ordenamiento"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-4 h-4" aria-hidden="true" />
                       </button>
                     )}
                   </div>
@@ -923,9 +923,9 @@ const DailyPage = () => {
                       }}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted/50 transition-colors ${sortMethod === 'dueDate' ? 'text-blue-500' : 'text-foreground'} cursor-pointer`}
                     >
-                      <Calendar className={`w-4 h-4 ${sortMethod === 'dueDate' ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                      <Calendar className={`w-4 h-4 ${sortMethod === 'dueDate' ? 'text-blue-500' : 'text-muted-foreground'}`} aria-hidden="true" />
                       <span className="flex-1 text-left">Fecha de vencimiento</span>
-                      {sortMethod === 'dueDate' && <Check className="w-4 h-4 text-blue-500" />}
+                      {sortMethod === 'dueDate' && <Check className="w-4 h-4 text-blue-500" aria-hidden="true" />}
                     </button>
                     <button
                       onClick={() => {
@@ -934,9 +934,9 @@ const DailyPage = () => {
                       }}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted/50 transition-colors ${sortMethod === 'alphabetical' ? 'text-blue-500' : 'text-foreground'} cursor-pointer`}
                     >
-                      <SortAsc className={`w-4 h-4 ${sortMethod === 'alphabetical' ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                      <SortAsc className={`w-4 h-4 ${sortMethod === 'alphabetical' ? 'text-blue-500' : 'text-muted-foreground'}`} aria-hidden="true" />
                       <span className="flex-1 text-left">Alfabéticamente</span>
-                      {sortMethod === 'alphabetical' && <Check className="w-4 h-4 text-blue-500" />}
+                      {sortMethod === 'alphabetical' && <Check className="w-4 h-4 text-blue-500" aria-hidden="true" />}
                     </button>
                     <button
                       onClick={() => {
@@ -945,17 +945,17 @@ const DailyPage = () => {
                       }}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted/50 transition-colors ${sortMethod === 'createdAt' ? 'text-blue-500' : 'text-foreground'} cursor-pointer`}
                     >
-                      <CalendarPlus className={`w-4 h-4 ${sortMethod === 'createdAt' ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                      <CalendarPlus className={`w-4 h-4 ${sortMethod === 'createdAt' ? 'text-blue-500' : 'text-muted-foreground'}`} aria-hidden="true" />
                       <span className="flex-1 text-left">Fecha de creación</span>
-                      {sortMethod === 'createdAt' && <Check className="w-4 h-4 text-blue-500" />}
+                      {sortMethod === 'createdAt' && <Check className="w-4 h-4 text-blue-500" aria-hidden="true" />}
                     </button>
                   </div>
                 </div>
               )}
             </div>
             
-            <Button variant="outline" size="sm" className="cursor-pointer" onClick={() => setShowCategoriesModal(true)}>
-              <Tag className="w-4 h-4 mr-1" />
+            <Button variant="outline" size="sm" className="cursor-pointer" onClick={() => setShowCategoriesModal(true)} aria-label="Gestionar categorías">
+              <Tag className="w-4 h-4 mr-1" aria-hidden="true" />
               <span className="text-sm">Categorías</span>
             </Button>
           </div>
@@ -976,7 +976,7 @@ const DailyPage = () => {
               <div className="flex gap-2 mb-4">
                 <Input
                   type="text"
-                  placeholder="Nueva categoría..."
+                  placeholder="Nueva categoría…"
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   onKeyDown={(e) => {
@@ -985,6 +985,7 @@ const DailyPage = () => {
                     }
                   }}
                   className="flex-1"
+                  autoComplete="off"
                 />
                 <div className="relative">
                   <button
@@ -1093,10 +1094,10 @@ const DailyPage = () => {
         <div className="bg-card rounded-lg shadow-sm border border-border mb-6">
           {/* Input Row */}
           <div className="flex items-center gap-3 px-4 py-3">
-            <Circle className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+            <Circle className="w-5 h-5 text-muted-foreground flex-shrink-0" aria-hidden="true" />
             <input
               type="text"
-              placeholder="Agregar una tarea"
+              placeholder="Agregar una tarea…"
               value={newTask.title}
               onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
               onKeyDown={(e) => {
@@ -1104,7 +1105,9 @@ const DailyPage = () => {
                   addTask();
                 }
               }}
-              className="flex-1 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground"
+              className="flex-1 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring rounded"
+              autoComplete="off"
+              aria-label="Agregar una nueva tarea"
             />
           </div>
           

@@ -92,7 +92,7 @@ const DatePickerDropdown: React.FC<DatePickerDropdownProps> = ({
             className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <CalendarCheck className="w-5 h-5 text-muted-foreground" />
+              <CalendarCheck className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
               <span className="text-sm text-foreground">Hoy</span>
             </div>
             <span className="text-sm text-muted-foreground">{getDayName(getToday())}.</span>
@@ -114,7 +114,7 @@ const DatePickerDropdown: React.FC<DatePickerDropdownProps> = ({
             className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <CalendarDays className="w-5 h-5 text-muted-foreground" />
+              <CalendarDays className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
               <span className="text-sm text-foreground">Semana próxima</span>
             </div>
             <span className="text-sm text-muted-foreground">{getDayName(getNextWeek())}.</span>
@@ -123,9 +123,9 @@ const DatePickerDropdown: React.FC<DatePickerDropdownProps> = ({
           <div className="border-t border-border mt-2 pt-2">
             <button
               onClick={() => setShowCalendar(true)}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <Calendar className="w-5 h-5 text-muted-foreground" />
+              <Calendar className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
               <span className="text-sm text-foreground">Elegir una fecha</span>
             </button>
           </div>
@@ -134,9 +134,10 @@ const DatePickerDropdown: React.FC<DatePickerDropdownProps> = ({
             <div className="border-t border-border mt-2 pt-2">
               <button
                 onClick={onClearDate}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-red-500"
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Quitar fecha de vencimiento"
               >
-                <Trash2 className="w-5 h-5" />
+                <Trash2 className="w-5 h-5" aria-hidden="true" />
                 <span className="text-sm">Quitar fecha de vencimiento</span>
               </button>
             </div>
@@ -146,20 +147,22 @@ const DatePickerDropdown: React.FC<DatePickerDropdownProps> = ({
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-medium text-foreground">
-              {calendarDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+              {new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(calendarDate)}
             </span>
             <div className="flex items-center gap-1">
               <button
                 onClick={prevMonth}
-                className="p-1 hover:bg-muted rounded transition-colors"
+                className="p-1 hover:bg-muted rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Mes anterior"
               >
-                <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                <ChevronUp className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
               </button>
               <button
                 onClick={nextMonth}
-                className="p-1 hover:bg-muted rounded transition-colors"
+                className="p-1 hover:bg-muted rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Mes siguiente"
               >
-                <ChevronDown className="w-4 h-4 text-blue-500" />
+                <ChevronDown className="w-4 h-4 text-blue-500" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -186,7 +189,7 @@ const DatePickerDropdown: React.FC<DatePickerDropdownProps> = ({
                   key={day}
                   onClick={() => onSelectCalendarDate(day)}
                   disabled={isPast}
-                  className={`h-8 w-8 rounded-full text-sm flex items-center justify-center transition-colors
+                  className={`h-8 w-8 rounded-full text-sm flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
                     ${isSelectedDate(day)
                       ? 'bg-blue-500 text-white'
                       : isToday(day)
@@ -196,6 +199,8 @@ const DatePickerDropdown: React.FC<DatePickerDropdownProps> = ({
                           : 'text-foreground hover:bg-muted'
                     }
                   `}
+                  aria-label={`Seleccionar día ${day}`}
+                  aria-disabled={isPast}
                 >
                   {day}
                 </button>
@@ -205,7 +210,7 @@ const DatePickerDropdown: React.FC<DatePickerDropdownProps> = ({
 
           <button
             onClick={onSaveCalendarDate}
-            className="w-full mt-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+            className="w-full mt-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             Guardar
           </button>

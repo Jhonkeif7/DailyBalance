@@ -236,21 +236,21 @@ function CurrencyPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">Gestión Financiera</h1>
+      <header>
+        <h1 className="text-2xl font-semibold text-foreground" style={{ textWrap: "balance" }}>Gestión Financiera</h1>
         <p className="text-muted-foreground mt-1">Control total de tus finanzas personales</p>
-      </div>
+      </header>
 
       {/* Overview Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-card/50 backdrop-blur border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Balance Total</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-500">
-              ${getTotalBalance().toLocaleString("en-US", { minimumFractionDigits: 2 })}
+            <div className="text-2xl font-bold text-emerald-500" style={{ fontVariantNumeric: "tabular-nums" }}>
+              ${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(getTotalBalance())}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Todas las cuentas</p>
           </CardContent>
@@ -259,11 +259,11 @@ function CurrencyPage() {
         <Card className="bg-card/50 backdrop-blur border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ingresos del Mes</CardTitle>
-            <TrendingUp className="h-4 w-4 text-emerald-500" />
+            <TrendingUp className="h-4 w-4 text-emerald-500" aria-hidden="true" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-500">
-              ${getMonthlyIncome().toLocaleString("en-US", { minimumFractionDigits: 2 })}
+            <div className="text-2xl font-bold text-emerald-500" style={{ fontVariantNumeric: "tabular-nums" }}>
+              ${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(getMonthlyIncome())}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Diciembre 2025</p>
           </CardContent>
@@ -272,11 +272,11 @@ function CurrencyPage() {
         <Card className="bg-card/50 backdrop-blur border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Gastos del Mes</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-500" />
+            <TrendingDown className="h-4 w-4 text-red-500" aria-hidden="true" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-500">
-              ${getMonthlyExpenses().toLocaleString("en-US", { minimumFractionDigits: 2 })}
+            <div className="text-2xl font-bold text-red-500" style={{ fontVariantNumeric: "tabular-nums" }}>
+              ${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(getMonthlyExpenses())}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Diciembre 2025</p>
           </CardContent>
@@ -285,13 +285,14 @@ function CurrencyPage() {
         <Card className="bg-card/50 backdrop-blur border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Balance Neto</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           </CardHeader>
           <CardContent>
             <div
               className={`text-2xl font-bold ${(getMonthlyIncome() - getMonthlyExpenses()) >= 0 ? "text-emerald-500" : "text-red-500"}`}
+              style={{ fontVariantNumeric: "tabular-nums" }}
             >
-              ${(getMonthlyIncome() - getMonthlyExpenses()).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              ${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(getMonthlyIncome() - getMonthlyExpenses())}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Este mes</p>
           </CardContent>

@@ -18,15 +18,15 @@ function AccountTab({ accounts }: AccountTabProps) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-3 rounded-full bg-primary/10">
-                    <Icon className="h-5 w-5 text-primary" />
+                    <Icon className="h-5 w-5 text-primary" aria-hidden="true" />
                   </div>
                   <div>
                     <CardTitle className="text-lg">{account.name}</CardTitle>
                     <CardDescription className="capitalize">{account.type}</CardDescription>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon">
-                  <Edit className="h-4 w-4" />
+                <Button variant="ghost" size="icon" aria-label={`Editar cuenta ${account.name}`}>
+                  <Edit className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             </CardHeader>

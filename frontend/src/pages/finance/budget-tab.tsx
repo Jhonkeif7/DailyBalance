@@ -36,32 +36,32 @@ function BudgetTab({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-full ${category?.color || "bg-muted"}`}>
-                      <Icon className="h-4 w-4 text-white" />
+                      <Icon className="h-4 w-4 text-white" aria-hidden="true" />
                     </div>
                     <div>
                       <p className="font-medium">{budget.category}</p>
-                      <p className="text-sm text-muted-foreground">
-                        ${budget.spent.toLocaleString("en-US", { minimumFractionDigits: 2 })} de $
-                        {budget.limit.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      <p className="text-sm text-muted-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
+                        ${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(budget.spent)} de $
+                        {new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(budget.limit)}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {status === "exceeded" && (
                       <Badge variant="destructive" className="gap-1">
-                        <Bell className="h-3 w-3" />
+                        <Bell className="h-3 w-3" aria-hidden="true" />
                         Excedido
                       </Badge>
                     )}
                     {status === "warning" && (
                       <Badge variant="outline" className="gap-1 border-amber-500 text-amber-500">
-                        <Bell className="h-3 w-3" />
+                        <Bell className="h-3 w-3" aria-hidden="true" />
                         {Math.round(percentage)}%
                       </Badge>
                     )}
                     {status === "safe" && (
                       <Badge variant="outline" className="gap-1 border-emerald-500 text-emerald-500">
-                        <Check className="h-3 w-3" />
+                        <Check className="h-3 w-3" aria-hidden="true" />
                         {Math.round(percentage)}%
                       </Badge>
                     )}
@@ -76,6 +76,7 @@ function BudgetTab({
                         ? "[&>div]:bg-amber-500"
                         : "[&>div]:bg-emerald-500"
                   }`}
+                  aria-label={`Presupuesto ${budget.category}: ${Math.round(percentage)}% utilizado`}
                 />
               </div>
             )

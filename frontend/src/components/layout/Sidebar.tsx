@@ -82,13 +82,26 @@ function Sidebar() {
                 </div>
             </div>
 
+                        {/* Bottom Section */}
+                        <div className="border-t border-sidebar-border p-3 space-y-1">
+                <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200">
+                    <Search className="w-5 h-5" />
+                    <span>Buscar</span>
+                    <kbd className="ml-auto text-xs bg-sidebar-accent px-2 py-0.5 rounded">⌘K</kbd>
+                </button>
+                {/* <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200">
+                    <HelpCircle className="w-5 h-5" />
+                    <span>Ayuda</span>
+                </button> */}
+            </div>
+
             {/* Quick Create Button */}
-            <div className="px-3 py-3">
+            {/* <div className="px-3 py-3">
                 <button className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition-colors">
                     <Plus className="w-4 h-4" />
                     <span>Crear Nuevo</span>
                 </button>
-            </div>
+            </div> */}
 
             {/* Navigation */}
             <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-6">
@@ -144,19 +157,6 @@ function Sidebar() {
                     />
                 </NavSection>
             </nav>
-
-            {/* Bottom Section */}
-            <div className="border-t border-sidebar-border p-3 space-y-1">
-                <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200">
-                    <Search className="w-5 h-5" />
-                    <span>Buscar</span>
-                    <kbd className="ml-auto text-xs bg-sidebar-accent px-2 py-0.5 rounded">⌘K</kbd>
-                </button>
-                <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200">
-                    <HelpCircle className="w-5 h-5" />
-                    <span>Ayuda</span>
-                </button>
-            </div>
 
             {/* User Profile */}
             <div className="border-t border-sidebar-border p-3">

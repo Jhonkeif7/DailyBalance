@@ -35,15 +35,15 @@ const RepeatPickerDropdown: React.FC<RepeatPickerDropdownProps> = ({
 
         <button
           onClick={() => onSelectRepeat('daily')}
-          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Repeat className="w-5 h-5 text-muted-foreground" />
+          <Repeat className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
           <span className="text-sm text-foreground">Diariamente</span>
         </button>
 
         <button
           onClick={() => onSelectRepeat('weekdays')}
-          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Repeat1 className="w-5 h-5 text-muted-foreground" />
           <span className="text-sm text-foreground">Días laborables</span>
@@ -53,13 +53,13 @@ const RepeatPickerDropdown: React.FC<RepeatPickerDropdownProps> = ({
           onClick={() => onSelectRepeat('weekly')}
           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
         >
-          <Repeat2 className="w-5 h-5 text-muted-foreground" />
+          <Repeat2 className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
           <span className="text-sm text-foreground">Semanalmente</span>
         </button>
 
         <button
           onClick={() => onSelectRepeat('monthly')}
-          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <CalendarRange className="w-5 h-5 text-muted-foreground" />
           <span className="text-sm text-foreground">Mensualmente</span>
@@ -69,14 +69,14 @@ const RepeatPickerDropdown: React.FC<RepeatPickerDropdownProps> = ({
           onClick={() => onSelectRepeat('yearly')}
           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
         >
-          <Calendar className="w-5 h-5 text-muted-foreground" />
+          <Calendar className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
           <span className="text-sm text-foreground">Anualmente</span>
         </button>
 
         <div className="border-t border-border mt-2 pt-2">
           <button
             onClick={() => onSelectRepeat('custom')}
-            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Settings2 className="w-5 h-5 text-muted-foreground" />
             <span className="text-sm text-foreground">Personalizado</span>
@@ -87,7 +87,8 @@ const RepeatPickerDropdown: React.FC<RepeatPickerDropdownProps> = ({
           <div className="border-t border-border mt-2 pt-2">
             <button
               onClick={onClearRepeat}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-red-500"
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="No repetir nunca"
             >
               <Trash2 className="w-5 h-5" />
               <span className="text-sm">No repetir nunca</span>

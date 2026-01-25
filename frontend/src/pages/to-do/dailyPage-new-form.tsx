@@ -48,25 +48,34 @@ const NewTaskDialog: React.FC<NewTaskDialogProps> = ({
         </DialogHeader>
         <div className="space-y-4 mt-4">
           <div>
+            <label htmlFor="new-task-title" className="sr-only">Título de la tarea</label>
             <Input
-              placeholder="Título de la tarea"
+              id="new-task-title"
+              placeholder="Título de la tarea…"
               value={newTask.title}
               onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+              autoComplete="off"
             />
           </div>
           <div>
+            <label htmlFor="new-task-description" className="sr-only">Descripción</label>
             <Textarea
-              placeholder="Descripción (opcional)"
+              id="new-task-description"
+              placeholder="Descripción (opcional)…"
               value={newTask.description}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewTask({ ...newTask, description: e.target.value })}
               rows={3}
+              autoComplete="off"
             />
           </div>
           <div>
+            <label htmlFor="new-task-date" className="sr-only">Fecha de vencimiento</label>
             <Input
+              id="new-task-date"
               type="date"
               value={newTask.dueDate}
               onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+              autoComplete="off"
             />
           </div>
           <div>

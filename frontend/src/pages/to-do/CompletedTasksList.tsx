@@ -43,9 +43,9 @@ interface CompletedTasksListProps {
 // Importance Icon Component
 const ImportanceIcon = ({ level }: { level: 'normal' | 'medium' | 'high' }) => {
   if (level === 'high') {
-    return <Star className="w-4 h-4 fill-blue-500 text-blue-500" />;
+    return <Star className="w-4 h-4 fill-blue-500 text-blue-500" aria-hidden="true" />;
   }
-  return <Star className="w-4 h-4 text-muted-foreground hover:text-blue-500" />;
+  return <Star className="w-4 h-4 text-muted-foreground hover:text-blue-500" aria-hidden="true" />;
 };
 
 const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
@@ -63,12 +63,14 @@ const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
     <div className="bg-card rounded-lg shadow-sm border border-border mt-6">
       <button
         onClick={() => setShowCompleted(!showCompleted)}
-        className="w-full flex items-center gap-2 p-4 hover:bg-muted/50 transition-colors"
+        className="w-full flex items-center gap-2 p-4 hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-expanded={showCompleted}
+        aria-label={showCompleted ? "Ocultar tareas completadas" : "Mostrar tareas completadas"}
       >
         {showCompleted ? (
-          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          <ChevronDown className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
         ) : (
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
         )}
         <span className="font-medium text-foreground">Completado</span>
         <span className="text-sm text-muted-foreground">{completedTasks.length}</span>
@@ -87,9 +89,10 @@ const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
                   e.stopPropagation();
                   toggleTaskComplete(task.id);
                 }}
-                className="flex-shrink-0"
+                className="flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                aria-label={task.completed ? "Marcar como no completada" : "Marcar como completada"}
               >
-                <CheckCircle2 className="w-5 h-5 text-blue-500 cursor-pointer" />
+                <CheckCircle2 className="w-5 h-5 text-blue-500 cursor-pointer" aria-hidden="true" />
               </button>
 
               <div className="flex-1 min-w-0">
@@ -101,7 +104,7 @@ const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
               <div className="flex items-center gap-2 flex-shrink-0">
                 {task.dueDate && (
                   <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
+                    <Calendar className="w-3 h-3" aria-hidden="true" />
                     {task.dueDate}
                   </span>
                 )}
@@ -110,8 +113,8 @@ const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
                     e.stopPropagation();
                     toggleTaskImportance(task.id);
                   }}
-                  className="flex-shrink-0 hover:scale-110 transition-transform"
-                  title={task.importance === 'high' ? 'Quitar importancia' : 'Marcar como importante'}
+                  className="flex-shrink-0 hover:scale-110 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                  aria-label={task.importance === 'high' ? 'Quitar importancia' : 'Marcar como importante'}
                 >
                   <ImportanceIcon level={task.importance} />
                 </button>

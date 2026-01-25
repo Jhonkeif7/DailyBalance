@@ -15,7 +15,10 @@ function CategoryTab({ categories }: CategoryTabProps) {
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {categories.map((category) => {
+          {categories.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8 col-span-full">No hay categorías configuradas</p>
+          ) : (
+            categories.map((category) => {
             const Icon = category.icon
             return (
               <Card key={category.id} className="border-border/50 bg-card/30">
@@ -23,7 +26,7 @@ function CategoryTab({ categories }: CategoryTabProps) {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className={`p-3 rounded-full ${category.color}`}>
-                        <Icon className="h-5 w-5 text-white" />
+                        <Icon className="h-5 w-5 text-white" aria-hidden="true" />
                       </div>
                       <CardTitle className="text-base">{category.name}</CardTitle>
                     </div>
@@ -33,17 +36,21 @@ function CategoryTab({ categories }: CategoryTabProps) {
                   <div className="space-y-2">
                     <p className="text-sm text-muted-foreground">Subcategorías:</p>
                     <div className="flex flex-wrap gap-2">
-                      {category.subcategories.map((sub, idx) => (
-                        <Badge key={idx} variant="secondary" className="text-xs">
-                          {sub}
-                        </Badge>
-                      ))}
+                      {category.subcategories.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Sin subcategorías</p>
+                      ) : (
+                        category.subcategories.map((sub, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {sub}
+                          </Badge>
+                        ))
+                      )}
                     </div>
                   </div>
                 </CardContent>
               </Card>
             )
-          })}
+          }))}
         </div>
 
         <Card className="mt-6 border-border/50 bg-muted/30">
