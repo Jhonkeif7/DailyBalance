@@ -299,7 +299,7 @@ const NotesPage = () => {
         'group relative p-3 rounded-xl cursor-pointer transition-all duration-200',
         'hover:bg-accent/50',
         selectedNoteId === note.id
-          ? 'bg-yellow-500/20 dark:bg-yellow-500/10 border border-yellow-500/30'
+          ? 'bg-primary/15 dark:bg-primary/10 border border-primary/30'
           : 'bg-card border border-transparent'
       )}
     >
@@ -411,7 +411,7 @@ const NotesPage = () => {
               className={cn(
                 'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all',
                 selectedFolderId === folder.id
-                  ? 'bg-yellow-500/20 dark:bg-yellow-500/10 text-foreground'
+                  ? 'bg-primary/15 dark:bg-primary/10 text-foreground'
                   : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
               )}
             >
@@ -532,7 +532,7 @@ const NotesPage = () => {
         <div className="p-3 border-t border-border">
           <Button
             onClick={createNote}
-            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-medium rounded-xl"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-xl"
           >
             <Plus className="w-4 h-4 mr-2" />
             Nueva nota
@@ -656,8 +656,8 @@ const NotesPage = () => {
         ) : (
           /* Empty state */
           <div className="flex-1 flex flex-col items-center justify-center text-center">
-            <div className="w-24 h-24 rounded-full bg-yellow-500/10 flex items-center justify-center mb-6">
-              <Edit3 className="w-12 h-12 text-yellow-500" />
+            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+              <Edit3 className="w-12 h-12 text-primary" />
             </div>
             <h2 className="text-xl font-semibold text-foreground mb-2">
               Selecciona una nota
@@ -667,7 +667,7 @@ const NotesPage = () => {
             </p>
             <Button
               onClick={createNote}
-              className="mt-6 bg-yellow-500 hover:bg-yellow-600 text-black font-medium rounded-xl"
+              className="mt-6 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-xl"
             >
               <Plus className="w-4 h-4 mr-2" />
               Nueva nota
@@ -681,7 +681,7 @@ const NotesPage = () => {
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FolderPlus className="w-5 h-5 text-yellow-500" />
+              <FolderPlus className="w-5 h-5 text-primary" />
               Nueva carpeta
             </DialogTitle>
           </DialogHeader>
@@ -713,7 +713,7 @@ const NotesPage = () => {
             <Button
               onClick={createFolder}
               disabled={!newFolderName.trim()}
-              className="bg-yellow-500 hover:bg-yellow-600 text-black rounded-xl"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
             >
               Crear
             </Button>

@@ -1,11 +1,6 @@
-import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/Card"
+import { useMemo, useState } from "react"
+import { PageContainer } from "@/components/ui/PageContainer"
 import {
-    DollarSign,
-    TrendingUp,
-    TrendingDown,
-    PiggyBank,
-    Wallet,
     CreditCard,
     Smartphone,
     ShoppingCart,
@@ -15,18 +10,10 @@ import {
     Heart,
     Gamepad2,
     Zap,
-    ArrowUpRight,
-    ArrowDownRight,
+    Wallet,
 } from "lucide-react"
 import CurrencyTab from "./currency-tab"
-import type {
-    Transaction,
-    Category,
-    Account,
-    Budget,
-    RecurringExpense,
-    NewTransactionForm,
-} from "./currency-tab"
+import type { Transaction, Category, Account, Budget } from "./currency-tab"
 
 // Mock Data
 const initialCategories: Category[] = [
@@ -65,173 +52,100 @@ const initialBudgets: Budget[] = [
     { id: "5", category: "Salud", limit: 100, spent: 40, month: "2026-01" },
 ]
 
-const initialRecurringExpenses: RecurringExpense[] = [
-    { id: "1", name: "Netflix", amount: 15.99, frequency: "monthly", nextDate: "2026-02-23", category: "Ocio", status: "active" },
-    { id: "2", name: "Spotify", amount: 9.99, frequency: "monthly", nextDate: "2026-02-15", category: "Ocio", status: "active" },
-    { id: "3", name: "Gym", amount: 40.00, frequency: "monthly", nextDate: "2026-02-18", category: "Salud", status: "active" },
-    { id: "4", name: "Internet", amount: 55.00, frequency: "monthly", nextDate: "2026-02-01", category: "Servicios", status: "active" },
-    { id: "5", name: "Seguro Auto", amount: 600.00, frequency: "annual", nextDate: "2026-06-15", category: "Transporte", status: "paused" },
-]
-
-const initialNewTransaction: NewTransactionForm = {
-    type: "expense",
-    amount: "",
-    category: "",
-    subcategory: "",
-    paymentMethod: "card",
-    date: new Date().toISOString().split("T")[0],
-    description: "",
-    status: "confirmed",
-    account: "",
-}
-
-// Utility functions
-const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount)
-}
-
-// Stat Card Component
-function StatCard({ title, value, trend, trendValue, icon, colorClass }: {
-    title: string
-    value: string
-    trend?: "up" | "down"
-    trendValue?: string
-    icon: React.ReactNode
-    colorClass: string
-}) {
-    return (
-        <Card className="bg-card/50 backdrop-blur border-border/50">
-            <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                    <div className="min-w-0 flex-1">
-                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{title}</p>
-                        <p className="text-xl sm:text-2xl font-bold mt-1 truncate">{value}</p>
-                        {trend && trendValue && (
-                            <div className={`flex items-center gap-1 mt-1 text-xs ${trend === "up" ? "text-emerald-500" : "text-red-500"}`}>
-                                {trend === "up" ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                                <span>{trendValue}</span>
-                            </div>
-                        )}
-                    </div>
-                    <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${colorClass} flex-shrink-0`}>
-                        {icon}
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    )
-}
-
 function CurrencyPage() {
-    // State
-    const [accounts] = useState<Account[]>(initialAccounts)
-    const [categories] = useState<Category[]>(initialCategories)
+    const [accounts, setAccounts] = useState<Account[]>(initialAccounts)
+    const [categories, setCategories] = useState<Category[]>(initialCategories)
     const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions)
-    const [budgets] = useState<Budget[]>(initialBudgets)
-    const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>(initialRecurringExpenses)
-    const [newTransaction, setNewTransaction] = useState<NewTransactionForm>(initialNewTransaction)
+    const [budgets, setBudgets] = useState<Budget[]>(initialBudgets)
 
-    // Calculate totals
-    const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0)
-    const monthlyIncome = transactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
-    const monthlyExpenses = transactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.amount, 0)
-    const monthlySavings = monthlyIncome - monthlyExpenses
-
-    // Functions
-    const addTransaction = () => {
-        if (!newTransaction.amount || !newTransaction.category || !newTransaction.account) return
-
-        const transaction: Transaction = {
-            id: Date.now().toString(),
-            type: newTransaction.type as "income" | "expense" | "transfer",
-            amount: parseFloat(newTransaction.amount),
-            category: newTransaction.category,
-            subcategory: newTransaction.subcategory,
-            paymentMethod: newTransaction.paymentMethod,
-            date: newTransaction.date,
-            description: newTransaction.description,
-            status: newTransaction.status as "confirmed" | "pending",
-            account: newTransaction.account,
-        }
-
-        setTransactions([transaction, ...transactions])
-        setNewTransaction(initialNewTransaction)
-    }
-
-    const toggleRecurringStatus = (id: string) => {
-        setRecurringExpenses(
-            recurringExpenses.map((expense) =>
-                expense.id === id
-                    ? { ...expense, status: expense.status === "active" ? "paused" : "active" }
-                    : expense
-            )
+    // ===== Transactions CRUD =====
+    const upsertTransaction = (tx: Transaction) =>
+        setTransactions((prev) =>
+            prev.some((t) => t.id === tx.id)
+                ? prev.map((t) => (t.id === tx.id ? tx : t))
+                : [tx, ...prev]
         )
-    }
+    const deleteTransaction = (id: string) =>
+        setTransactions((prev) => prev.filter((t) => t.id !== id))
 
-    const getBudgetPercentage = (budget: Budget) => {
-        return Math.min((budget.spent / budget.limit) * 100, 100)
-    }
+    // ===== Accounts CRUD =====
+    const upsertAccount = (account: Account) =>
+        setAccounts((prev) =>
+            prev.some((a) => a.id === account.id)
+                ? prev.map((a) => (a.id === account.id ? account : a))
+                : [...prev, account]
+        )
+    const deleteAccount = (id: string) =>
+        setAccounts((prev) => prev.filter((a) => a.id !== id))
+
+    // ===== Budgets CRUD =====
+    const upsertBudget = (budget: Budget) =>
+        setBudgets((prev) =>
+            prev.some((b) => b.id === budget.id)
+                ? prev.map((b) => (b.id === budget.id ? budget : b))
+                : [...prev, budget]
+        )
+    const deleteBudget = (id: string) =>
+        setBudgets((prev) => prev.filter((b) => b.id !== id))
+
+    // ===== Categories CRUD =====
+    const upsertCategory = (category: Category) =>
+        setCategories((prev) =>
+            prev.some((c) => c.id === category.id)
+                ? prev.map((c) => (c.id === category.id ? category : c))
+                : [...prev, category]
+        )
+    const deleteCategory = (id: string) =>
+        setCategories((prev) => prev.filter((c) => c.id !== id))
+
+    // ===== Totals =====
+    const totals = useMemo(() => {
+        const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0)
+        const monthlyIncome = transactions
+            .filter((t) => t.type === "income")
+            .reduce((sum, t) => sum + t.amount, 0)
+        const monthlyExpenses = transactions
+            .filter((t) => t.type === "expense")
+            .reduce((sum, t) => sum + t.amount, 0)
+        return {
+            totalBalance,
+            monthlyIncome,
+            monthlyExpenses,
+            monthlySavings: monthlyIncome - monthlyExpenses,
+        }
+    }, [accounts, transactions])
+
+    // ===== Budget helpers =====
+    const getBudgetPercentage = (budget: Budget) =>
+        Math.min((budget.spent / budget.limit) * 100, 100)
 
     const getBudgetStatus = (budget: Budget): "exceeded" | "warning" | "safe" => {
-        const percentage = getBudgetPercentage(budget)
+        const percentage = (budget.spent / budget.limit) * 100
         if (percentage >= 100) return "exceeded"
         if (percentage >= 80) return "warning"
         return "safe"
     }
 
     return (
-        <div className="space-y-4 sm:space-y-6">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <StatCard
-                    title="Balance Total"
-                    value={formatCurrency(totalBalance)}
-                    trend="up"
-                    trendValue="+8.2%"
-                    icon={<DollarSign className="w-5 h-5" />}
-                    colorClass="bg-emerald-500/10 text-emerald-500"
-                />
-                <StatCard
-                    title="Ingresos del Mes"
-                    value={formatCurrency(monthlyIncome)}
-                    trend="up"
-                    trendValue="+12.5%"
-                    icon={<TrendingUp className="w-5 h-5" />}
-                    colorClass="bg-emerald-500/10 text-emerald-500"
-                />
-                <StatCard
-                    title="Gastos del Mes"
-                    value={formatCurrency(monthlyExpenses)}
-                    trend="down"
-                    trendValue="-5.3%"
-                    icon={<TrendingDown className="w-5 h-5" />}
-                    colorClass="bg-red-500/10 text-red-500"
-                />
-                <StatCard
-                    title="Ahorro del Mes"
-                    value={formatCurrency(monthlySavings)}
-                    trend="up"
-                    trendValue="+18.7%"
-                    icon={<PiggyBank className="w-5 h-5" />}
-                    colorClass="bg-blue-500/10 text-blue-500"
-                />
-            </div>
-
-            {/* Currency Tabs */}
+        <PageContainer>
             <CurrencyTab
                 accounts={accounts}
                 categories={categories}
                 transactions={transactions}
                 budgets={budgets}
-                recurringExpenses={recurringExpenses}
-                newTransaction={newTransaction}
-                setNewTransaction={setNewTransaction}
-                addTransaction={addTransaction}
-                toggleRecurringStatus={toggleRecurringStatus}
+                totals={totals}
+                upsertTransaction={upsertTransaction}
+                deleteTransaction={deleteTransaction}
+                upsertAccount={upsertAccount}
+                deleteAccount={deleteAccount}
+                upsertBudget={upsertBudget}
+                deleteBudget={deleteBudget}
+                upsertCategory={upsertCategory}
+                deleteCategory={deleteCategory}
                 getBudgetPercentage={getBudgetPercentage}
                 getBudgetStatus={getBudgetStatus}
             />
-        </div>
+        </PageContainer>
     )
 }
 

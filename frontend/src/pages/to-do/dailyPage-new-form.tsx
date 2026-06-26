@@ -102,7 +102,7 @@ const NewTaskDialog: React.FC<NewTaskDialogProps> = ({
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={onAddTask} className="w-full bg-blue-500 hover:bg-blue-600">
+          <Button onClick={onAddTask} className="w-full">
             Agregar Tarea
           </Button>
         </div>

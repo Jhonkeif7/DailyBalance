@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/Card";
+import { PageContainer } from "@/components/ui/PageContainer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
@@ -94,7 +95,7 @@ function StatCard({
     trend, 
     trendValue, 
     icon,
-    iconColor = "bg-emerald-500/10 text-emerald-500"
+    iconColor = "bg-primary/10 text-primary"
 }: {
     title: string;
     value: string;
@@ -105,11 +106,11 @@ function StatCard({
     iconColor?: string;
 }) {
     return (
-        <Card className="bg-card/50 backdrop-blur border-border/50">
+        <Card className="bg-card/60 backdrop-blur border-border/60">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
                 {trend && trendValue && (
-                    <span className={`flex items-center text-xs font-medium ${trend === "up" ? "text-emerald-500" : "text-red-500"}`}>
+                    <span className={`flex items-center text-xs font-medium ${trend === "up" ? "text-success" : "text-destructive"}`}>
                         {trend === "up" ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                         {trendValue}
                     </span>
@@ -140,12 +141,12 @@ function BarChartComponent({ data }: { data: typeof monthlyData }) {
                 <div key={item.month} className="flex-1 flex flex-col items-center gap-2">
                     <div className="w-full flex gap-1 items-end justify-center h-48">
                         <div
-                            className="w-5 bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-sm transition-all duration-300 hover:opacity-80"
+                            className="w-5 bg-gradient-to-t from-success to-success/60 rounded-t-sm transition-all duration-300 hover:opacity-80"
                             style={{ height: `${(item.income / maxValue) * 100}%` }}
                             title={`Ingresos: $${item.income}`}
                         />
                         <div
-                            className="w-5 bg-gradient-to-t from-red-600 to-red-400 rounded-t-sm transition-all duration-300 hover:opacity-80"
+                            className="w-5 bg-gradient-to-t from-destructive to-destructive/60 rounded-t-sm transition-all duration-300 hover:opacity-80"
                             style={{ height: `${(item.expense / maxValue) * 100}%` }}
                             title={`Gastos: $${item.expense}`}
                         />
@@ -233,10 +234,10 @@ function SummaryTable({ data }: { data: TransactionSummary[] }) {
                             className="border-b border-border/30 hover:bg-muted/30 transition-colors"
                         >
                             <td className="py-3 px-4 text-sm font-medium">{row.category}</td>
-                            <td className="py-3 px-4 text-sm text-right text-emerald-500">
+                            <td className="py-3 px-4 text-sm text-right text-success">
                                 +${row.income.toLocaleString()}
                             </td>
-                            <td className="py-3 px-4 text-sm text-right text-red-500">
+                            <td className="py-3 px-4 text-sm text-right text-destructive">
                                 -${row.expense.toLocaleString()}
                             </td>
                             <td className="py-3 px-4 text-sm text-right font-semibold">
@@ -245,7 +246,7 @@ function SummaryTable({ data }: { data: TransactionSummary[] }) {
                             <td className="py-3 px-4 text-center">
                                 <Badge 
                                     variant={row.balance > 1500 ? "default" : "secondary"}
-                                    className={row.balance > 1500 ? "bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30" : ""}
+                                    className={row.balance > 1500 ? "bg-success/20 text-success hover:bg-success/30" : ""}
                                 >
                                     {row.balance > 1500 ? "Excelente" : "Bueno"}
                                 </Badge>
@@ -256,10 +257,10 @@ function SummaryTable({ data }: { data: TransactionSummary[] }) {
                 <tfoot>
                     <tr className="bg-muted/30">
                         <td className="py-3 px-4 text-sm font-bold">Total</td>
-                        <td className="py-3 px-4 text-sm text-right font-bold text-emerald-500">
+                        <td className="py-3 px-4 text-sm text-right font-bold text-success">
                             +${data.reduce((sum, r) => sum + r.income, 0).toLocaleString()}
                         </td>
-                        <td className="py-3 px-4 text-sm text-right font-bold text-red-500">
+                        <td className="py-3 px-4 text-sm text-right font-bold text-destructive">
                             -${data.reduce((sum, r) => sum + r.expense, 0).toLocaleString()}
                         </td>
                         <td className="py-3 px-4 text-sm text-right font-bold">
@@ -277,12 +278,12 @@ const ReportPage = () => {
     const [period, setPeriod] = useState("6months");
 
     return (
-        <div className="space-y-6">
+        <PageContainer>
             {/* Header con filtros */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-emerald-500/10">
-                        <BarChart3 className="w-5 h-5 text-emerald-500" />
+                    <div className="p-2 rounded-lg bg-primary/10">
+                        <BarChart3 className="w-5 h-5 text-primary" />
                     </div>
                     <div>
                         <h2 className="text-lg font-semibold">Centro de Reportes</h2>
@@ -314,15 +315,15 @@ const ReportPage = () => {
             {/* Tabs de reportes */}
             <Tabs defaultValue="finance" className="space-y-6">
                 <TabsList className="bg-card/50 border border-border/50">
-                    <TabsTrigger value="finance" className="gap-2 data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-500">
+                    <TabsTrigger value="finance" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                         <DollarSign className="w-4 h-4" />
                         Finanzas
                     </TabsTrigger>
-                    <TabsTrigger value="productivity" className="gap-2 data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-500">
+                    <TabsTrigger value="productivity" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                         <Target className="w-4 h-4" />
                         Productividad
                     </TabsTrigger>
-                    <TabsTrigger value="summary" className="gap-2 data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-500">
+                    <TabsTrigger value="summary" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                         <PieChart className="w-4 h-4" />
                         Resumen
                     </TabsTrigger>
@@ -369,7 +370,7 @@ const ReportPage = () => {
                     {/* Gráficos */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         {/* Gráfico de barras */}
-                        <Card className="lg:col-span-2 bg-card/50 backdrop-blur border-border/50">
+                        <Card className="lg:col-span-2 bg-card/60 backdrop-blur border-border/60">
                             <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -378,11 +379,11 @@ const ReportPage = () => {
                                     </div>
                                     <div className="flex items-center gap-4 text-xs">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                                            <div className="w-3 h-3 rounded-full bg-success" />
                                             <span className="text-muted-foreground">Ingresos</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <div className="w-3 h-3 rounded-full bg-red-500" />
+                                            <div className="w-3 h-3 rounded-full bg-destructive" />
                                             <span className="text-muted-foreground">Gastos</span>
                                         </div>
                                     </div>
@@ -394,7 +395,7 @@ const ReportPage = () => {
                         </Card>
 
                         {/* Gráfico circular */}
-                        <Card className="bg-card/50 backdrop-blur border-border/50">
+                        <Card className="bg-card/60 backdrop-blur border-border/60">
                             <CardHeader>
                                 <CardTitle>Gastos por Categoría</CardTitle>
                                 <CardDescription>Distribución del mes actual</CardDescription>
@@ -406,7 +407,7 @@ const ReportPage = () => {
                     </div>
 
                     {/* Desglose por categoría */}
-                    <Card className="bg-card/50 backdrop-blur border-border/50">
+                    <Card className="bg-card/60 backdrop-blur border-border/60">
                         <CardHeader>
                             <CardTitle>Desglose de Gastos</CardTitle>
                             <CardDescription>Detalle por categoría con progreso</CardDescription>
@@ -476,7 +477,7 @@ const ReportPage = () => {
                     </div>
 
                     {/* Gráfico semanal */}
-                    <Card className="bg-card/50 backdrop-blur border-border/50">
+                    <Card className="bg-card/60 backdrop-blur border-border/60">
                         <CardHeader>
                             <CardTitle>Productividad Semanal</CardTitle>
                             <CardDescription>Tareas completadas vs planeadas</CardDescription>
@@ -500,10 +501,10 @@ const ReportPage = () => {
                                                 variant="outline" 
                                                 className={`ml-3 w-16 justify-center ${
                                                     (day.completed / day.total) >= 0.8 
-                                                        ? "border-emerald-500 text-emerald-500" 
+                                                        ? "border-success text-success" 
                                                         : (day.completed / day.total) >= 0.6
                                                             ? "border-amber-500 text-amber-500"
-                                                            : "border-red-500 text-red-500"
+                                                            : "border-destructive text-destructive"
                                                 }`}
                                             >
                                                 {Math.round((day.completed / day.total) * 100)}%
@@ -519,7 +520,7 @@ const ReportPage = () => {
                 {/* Tab: Resumen */}
                 <TabsContent value="summary" className="space-y-6">
                     {/* Tabla de resumen */}
-                    <Card className="bg-card/50 backdrop-blur border-border/50">
+                    <Card className="bg-card/60 backdrop-blur border-border/60">
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <div>
@@ -539,32 +540,32 @@ const ReportPage = () => {
 
                     {/* Insights */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Card className="bg-card/50 backdrop-blur border-border/50">
+                        <Card className="bg-card/60 backdrop-blur border-border/60">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Sparkles className="w-5 h-5 text-emerald-500" />
+                                    <Sparkles className="w-5 h-5 text-success" />
                                     Puntos Positivos
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <ul className="space-y-3">
                                     <li className="flex items-start gap-3">
-                                        <div className="mt-1 w-2 h-2 rounded-full bg-emerald-500" />
+                                        <div className="mt-1 w-2 h-2 rounded-full bg-success" />
                                         <span className="text-sm">Has aumentado tu ahorro mensual en un <strong>18%</strong> respecto al semestre anterior.</span>
                                     </li>
                                     <li className="flex items-start gap-3">
-                                        <div className="mt-1 w-2 h-2 rounded-full bg-emerald-500" />
+                                        <div className="mt-1 w-2 h-2 rounded-full bg-success" />
                                         <span className="text-sm">Redujiste gastos en entretenimiento en un <strong>12%</strong>.</span>
                                     </li>
                                     <li className="flex items-start gap-3">
-                                        <div className="mt-1 w-2 h-2 rounded-full bg-emerald-500" />
+                                        <div className="mt-1 w-2 h-2 rounded-full bg-success" />
                                         <span className="text-sm">Tu productividad ha mejorado <strong>5 puntos</strong> porcentuales.</span>
                                     </li>
                                 </ul>
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-card/50 backdrop-blur border-border/50">
+                        <Card className="bg-card/60 backdrop-blur border-border/60">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <Target className="w-5 h-5 text-amber-500" />
@@ -591,7 +592,7 @@ const ReportPage = () => {
                     </div>
                 </TabsContent>
             </Tabs>
-        </div>
+        </PageContainer>
     );
 };
 

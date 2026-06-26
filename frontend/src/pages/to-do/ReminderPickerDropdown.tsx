@@ -122,7 +122,7 @@ const ReminderPickerDropdown: React.FC<ReminderPickerDropdownProps> = ({
             <div className="border-t border-border mt-2 pt-2">
               <button
                 onClick={onClearReminder}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Quitar aviso"
               >
                 <Trash2 className="w-5 h-5" aria-hidden="true" />
@@ -150,7 +150,7 @@ const ReminderPickerDropdown: React.FC<ReminderPickerDropdownProps> = ({
                 className="p-1 hover:bg-muted rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Mes siguiente"
               >
-                <ChevronDown className="w-4 h-4 text-blue-500" aria-hidden="true" />
+                <ChevronDown className="w-4 h-4 text-primary" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -179,7 +179,7 @@ const ReminderPickerDropdown: React.FC<ReminderPickerDropdownProps> = ({
                   disabled={isPast}
                   className={`h-8 w-8 rounded-full text-sm flex items-center justify-center transition-colors
                     ${isSelectedDate(day)
-                      ? 'bg-blue-500 text-white'
+                      ? 'bg-primary text-primary-foreground'
                       : isPast
                         ? 'text-muted-foreground/50 cursor-not-allowed'
                         : 'text-foreground hover:bg-muted'
@@ -204,7 +204,7 @@ const ReminderPickerDropdown: React.FC<ReminderPickerDropdownProps> = ({
 
           <button
             onClick={onSaveReminder}
-            className="w-full mt-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="w-full mt-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             Guardar
           </button>

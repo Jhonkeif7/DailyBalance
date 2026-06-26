@@ -1,10 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { StatCard } from "@/components/ui/StatCard"
+import { ArrowLeftRight, Wallet, PiggyBank, Tag, DollarSign, TrendingUp, TrendingDown } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import MovimentTab from "./moviment-tab"
 import AccountTab from "./account-tab"
 import BudgetTab from "./budget-tab"
-import RecurrentTab from "./recurrent-tab"
 import CategoryTab from "./category-tab"
+import { formatCurrency } from "./finance-utils"
 
 // Types
 export interface Transaction {
@@ -45,26 +47,11 @@ export interface Budget {
   month: string
 }
 
-export interface RecurringExpense {
-  id: string
-  name: string
-  amount: number
-  frequency: "weekly" | "monthly" | "annual"
-  nextDate: string
-  category: string
-  status: "active" | "paused"
-}
-
-export interface NewTransactionForm {
-  type: string
-  amount: string
-  category: string
-  subcategory: string
-  paymentMethod: string
-  date: string
-  description: string
-  status: string
-  account: string
+export interface FinanceTotals {
+  totalBalance: number
+  monthlyIncome: number
+  monthlyExpenses: number
+  monthlySavings: number
 }
 
 interface CurrencyTabProps {
@@ -72,77 +59,130 @@ interface CurrencyTabProps {
   categories: Category[]
   transactions: Transaction[]
   budgets: Budget[]
-  recurringExpenses: RecurringExpense[]
-  newTransaction: NewTransactionForm
-  setNewTransaction: (transaction: NewTransactionForm) => void
-  addTransaction: () => void
-  toggleRecurringStatus: (id: string) => void
+  totals: FinanceTotals
+  upsertTransaction: (transaction: Transaction) => void
+  deleteTransaction: (id: string) => void
+  upsertAccount: (account: Account) => void
+  deleteAccount: (id: string) => void
+  upsertBudget: (budget: Budget) => void
+  deleteBudget: (id: string) => void
+  upsertCategory: (category: Category) => void
+  deleteCategory: (id: string) => void
   getBudgetPercentage: (budget: Budget) => number
   getBudgetStatus: (budget: Budget) => "exceeded" | "warning" | "safe"
 }
+
+const tabItems = [
+  { value: "transactions", label: "Movimientos", icon: ArrowLeftRight },
+  { value: "accounts", label: "Cuentas", icon: Wallet },
+  { value: "budgets", label: "Presupuestos", icon: PiggyBank },
+  { value: "categories", label: "Categorías", icon: Tag },
+]
 
 function CurrencyTab({
   accounts,
   categories,
   transactions,
   budgets,
-  recurringExpenses,
-  newTransaction,
-  setNewTransaction,
-  addTransaction,
-  toggleRecurringStatus,
+  totals,
+  upsertTransaction,
+  deleteTransaction,
+  upsertAccount,
+  deleteAccount,
+  upsertBudget,
+  deleteBudget,
+  upsertCategory,
+  deleteCategory,
   getBudgetPercentage,
   getBudgetStatus,
 }: CurrencyTabProps) {
   return (
-    <Tabs defaultValue="transactions" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto">
-        <TabsTrigger value="transactions">Movimientos</TabsTrigger>
-        <TabsTrigger value="accounts">Cuentas</TabsTrigger>
-        <TabsTrigger value="budgets">Presupuestos</TabsTrigger>
-        <TabsTrigger value="recurring">Recurrentes</TabsTrigger>
-        <TabsTrigger value="categories">Categorías</TabsTrigger>
+    <Tabs defaultValue="transactions" className="space-y-4">
+      {/* Tabs en la parte superior */}
+      <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl bg-muted/60 p-1">
+        {tabItems.map(({ value, label, icon: Icon }) => (
+          <TabsTrigger
+            key={value}
+            value={value}
+            className="gap-1.5 rounded-lg px-3 py-1.5 text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm"
+          >
+            <Icon className="h-4 w-4" aria-hidden="true" />
+            <span>{label}</span>
+          </TabsTrigger>
+        ))}
       </TabsList>
 
-      {/* Transactions Tab */}
-      <TabsContent value="transactions" className="space-y-6">
+      {/* KPIs compactos persistentes */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+        <StatCard
+          compact
+          title="Balance Total"
+          value={formatCurrency(totals.totalBalance)}
+          tone="primary"
+          icon={<DollarSign className="h-full w-full" />}
+        />
+        <StatCard
+          compact
+          title="Ingresos"
+          value={formatCurrency(totals.monthlyIncome)}
+          tone="success"
+          icon={<TrendingUp className="h-full w-full" />}
+        />
+        <StatCard
+          compact
+          title="Gastos"
+          value={formatCurrency(totals.monthlyExpenses)}
+          tone="destructive"
+          icon={<TrendingDown className="h-full w-full" />}
+        />
+        <StatCard
+          compact
+          title="Ahorro"
+          value={formatCurrency(totals.monthlySavings)}
+          tone={totals.monthlySavings >= 0 ? "success" : "destructive"}
+          icon={<PiggyBank className="h-full w-full" />}
+        />
+      </div>
+
+      {/* Movimientos */}
+      <TabsContent value="transactions" className="space-y-4">
         <MovimentTab
           accounts={accounts}
           categories={categories}
           transactions={transactions}
-          newTransaction={newTransaction}
-          setNewTransaction={setNewTransaction}
-          addTransaction={addTransaction}
+          upsertTransaction={upsertTransaction}
+          deleteTransaction={deleteTransaction}
         />
       </TabsContent>
 
-      {/* Accounts Tab */}
-      <TabsContent value="accounts" className="space-y-6">
-        <AccountTab accounts={accounts} />
+      {/* Cuentas */}
+      <TabsContent value="accounts" className="space-y-4">
+        <AccountTab
+          accounts={accounts}
+          upsertAccount={upsertAccount}
+          deleteAccount={deleteAccount}
+        />
       </TabsContent>
 
-      {/* Budgets Tab */}
-      <TabsContent value="budgets" className="space-y-6">
+      {/* Presupuestos */}
+      <TabsContent value="budgets" className="space-y-4">
         <BudgetTab
           categories={categories}
           budgets={budgets}
+          upsertBudget={upsertBudget}
+          deleteBudget={deleteBudget}
           getBudgetPercentage={getBudgetPercentage}
           getBudgetStatus={getBudgetStatus}
         />
       </TabsContent>
 
-      {/* Recurring Expenses Tab */}
-      <TabsContent value="recurring" className="space-y-6">
-        <RecurrentTab
+      {/* Categorías */}
+      <TabsContent value="categories" className="space-y-4">
+        <CategoryTab
           categories={categories}
-          recurringExpenses={recurringExpenses}
-          toggleRecurringStatus={toggleRecurringStatus}
+          upsertCategory={upsertCategory}
+          deleteCategory={deleteCategory}
         />
-      </TabsContent>
-
-      {/* Categories Tab */}
-      <TabsContent value="categories" className="space-y-6">
-        <CategoryTab categories={categories} />
       </TabsContent>
     </Tabs>
   )

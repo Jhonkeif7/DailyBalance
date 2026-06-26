@@ -125,9 +125,9 @@ const ActionItem = ({
 }) => (
   <button
     onClick={onClick}
-    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left ${active ? 'text-blue-500' : 'text-foreground'}`}
+    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left ${active ? 'text-primary' : 'text-foreground'}`}
   >
-    <span className={active ? 'text-blue-500' : 'text-muted-foreground'}>{icon}</span>
+    <span className={active ? 'text-primary' : 'text-muted-foreground'}>{icon}</span>
     <span className="flex-1 text-sm">{label}</span>
   </button>
 );
@@ -323,7 +323,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
       {/* Resize Handle */}
       <div
         onMouseDown={handleMouseDown}
-        className={`absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500/50 transition-colors z-10 group flex items-center ${isResizing ? 'bg-blue-500/50' : ''}`}
+        className={`absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary/50 transition-colors z-10 group flex items-center ${isResizing ? 'bg-primary/50' : ''}`}
       >
         <div className="absolute left-0 w-4 h-16 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity -translate-x-1/2">
           <GripVertical className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
@@ -339,9 +339,9 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
             className="flex-shrink-0 mt-1 cursor-pointer hover:scale-110 transition-transform"
           >
             {selectedTask.completed ? (
-              <CheckCircle2 className="w-6 h-6 text-blue-500" aria-hidden="true" />
+              <CheckCircle2 className="w-6 h-6 text-primary" aria-hidden="true" />
             ) : (
-              <Circle className="w-6 h-6 text-muted-foreground hover:text-blue-500" aria-hidden="true" />
+              <Circle className="w-6 h-6 text-muted-foreground hover:text-primary" aria-hidden="true" />
             )}
           </button>
 
@@ -361,9 +361,9 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
             className="flex-shrink-0 mt-1 cursor-pointer hover:scale-110 transition-transform"
           >
             {selectedTask.importance === 'high' ? (
-              <Star className="w-5 h-5 fill-blue-500 text-blue-500" aria-hidden="true" />
+              <Star className="w-5 h-5 fill-primary text-primary" aria-hidden="true" />
             ) : (
-              <Star className="w-5 h-5 text-muted-foreground hover:text-blue-500" aria-hidden="true" />
+              <Star className="w-5 h-5 text-muted-foreground hover:text-primary" aria-hidden="true" />
             )}
           </button>
 
@@ -388,9 +388,9 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
                   className="flex-shrink-0"
                 >
                   {step.completed ? (
-                    <CheckCircle2 className="w-5 h-5 text-blue-500 cursor-pointer" />
+                    <CheckCircle2 className="w-5 h-5 text-primary cursor-pointer" />
                   ) : (
-                    <Circle className="w-5 h-5 text-muted-foreground hover:text-blue-500 cursor-pointer" />
+                    <Circle className="w-5 h-5 text-muted-foreground hover:text-primary cursor-pointer" />
                   )}
                 </button>
                 <input
@@ -414,7 +414,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
             <button
               type="button"
               onClick={() => addStep()}
-              className="w-full flex items-center gap-3 px-4 py-3 text-blue-500 hover:bg-muted/30 transition-colors cursor-pointer"
+              className="w-full flex items-center gap-3 px-4 py-3 text-primary hover:bg-muted/30 transition-colors cursor-pointer"
             >
               <Plus className="w-5 h-5" aria-hidden="true" />
               <span className="text-sm">Paso siguiente</span>
@@ -436,9 +436,9 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
                     setShowTaskReminderPicker(!showTaskReminderPicker);
                     setShowTaskReminderDateTime(false);
                   }}
-                  className={`flex-1 flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left ${selectedTaskReminder ? 'text-blue-500' : 'text-foreground'}`}
+                  className={`flex-1 flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left ${selectedTaskReminder ? 'text-primary' : 'text-foreground'}`}
                 >
-                  <Bell className={`w-5 h-5 ${selectedTaskReminder ? 'text-blue-500' : 'text-muted-foreground'} cursor-pointer`} />
+                  <Bell className={`w-5 h-5 ${selectedTaskReminder ? 'text-primary' : 'text-muted-foreground'} cursor-pointer`} />
                   <span className="text-sm cursor-pointer">
                     {getTaskReminderLabel()?.label || 'Recordarme'}
                   </span>
@@ -464,9 +464,9 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
                     setShowTaskDatePicker(!showTaskDatePicker);
                     setShowTaskCalendar(false);
                   }}
-                  className={`flex-1 flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left ${selectedTask.dueDate ? 'text-blue-500' : 'text-foreground'}`}
+                  className={`flex-1 flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left ${selectedTask.dueDate ? 'text-primary' : 'text-foreground'}`}
                 >
-                  <Calendar className={`w-5 h-5 ${selectedTask.dueDate ? 'text-blue-500' : 'text-muted-foreground'} cursor-pointer`} />
+                  <Calendar className={`w-5 h-5 ${selectedTask.dueDate ? 'text-primary' : 'text-muted-foreground'} cursor-pointer`} />
                   <span className="text-sm cursor-pointer">{getTaskDateLabel(selectedTask.dueDate)}</span>
                 </button>
                 {selectedTask.dueDate && (
@@ -487,9 +487,9 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowTaskRepeatPicker(!showTaskRepeatPicker)}
-                  className={`flex-1 flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left ${selectedTaskRepeat ? 'text-blue-500' : 'text-foreground'}`}
+                  className={`flex-1 flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left ${selectedTaskRepeat ? 'text-primary' : 'text-foreground'}`}
                 >
-                  <RefreshCw className={`w-5 h-5 ${selectedTaskRepeat ? 'text-blue-500' : 'text-muted-foreground'} cursor-pointer`} />
+                  <RefreshCw className={`w-5 h-5 ${selectedTaskRepeat ? 'text-primary' : 'text-muted-foreground'} cursor-pointer`} />
                   <span className="text-sm cursor-pointer">
                     {getTaskRepeatLabel()?.label || 'Repetir'}
                   </span>

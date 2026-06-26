@@ -3,7 +3,7 @@ import { Input } from "../../components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "../../components/ui/Card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/Button";
-import logo from "@/assets/Logo_DailyBalance.jpg";
+import logo from "@/assets/logo_dailybalance.png";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Loader2, Mail, Lock, Sparkles } from "lucide-react";
@@ -56,7 +56,7 @@ const LoginPage = () => {
                 <div className="relative flex justify-center items-center min-h-screen overflow-hidden">
             {/* Fondo con gradiente animado */}
             <div 
-                className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-green-800 to-teal-900"
+                className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-900 to-indigo-950"
                 style={{
                     backgroundSize: "400% 400%",
                     animation: "gradientShift 15s ease infinite",
@@ -66,7 +66,7 @@ const LoginPage = () => {
             {/* Elementos decorativos flotantes */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div 
-                    className="absolute w-72 h-72 bg-emerald-500/20 rounded-full blur-3xl"
+                    className="absolute w-72 h-72 bg-blue-500/20 rounded-full blur-3xl"
                     style={{
                         top: "10%",
                         left: "10%",
@@ -74,7 +74,7 @@ const LoginPage = () => {
                     }}
                 />
                 <div 
-                    className="absolute w-96 h-96 bg-teal-400/15 rounded-full blur-3xl"
+                    className="absolute w-96 h-96 bg-indigo-400/15 rounded-full blur-3xl"
                     style={{
                         bottom: "10%",
                         right: "5%",
@@ -82,7 +82,7 @@ const LoginPage = () => {
                     }}
                 />
                 <div 
-                    className="absolute w-64 h-64 bg-green-400/10 rounded-full blur-3xl"
+                    className="absolute w-64 h-64 bg-sky-400/10 rounded-full blur-3xl"
                     style={{
                         top: "50%",
                         left: "60%",
@@ -121,14 +121,14 @@ const LoginPage = () => {
                         className="relative group cursor-pointer"
                         style={{ animation: "pulse-glow 3s ease-in-out infinite" }}
                     >
-                        <div className="absolute -inset-1 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full blur opacity-40 group-hover:opacity-75 transition duration-500" />
+                        <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full blur opacity-40 group-hover:opacity-75 transition duration-500" />
                         <img 
                             src={logo} 
                             alt="Logo DailyBalance" 
                             className="relative w-20 h-20 rounded-full shadow-xl ring-4 ring-white/20 group-hover:scale-105 transition-transform duration-300" 
                         />
                     </div>
-                    <CardTitle className="mt-3 text-2xl font-bold bg-gradient-to-r from-white to-emerald-200 bg-clip-text text-transparent">
+                    <CardTitle className="mt-3 text-2xl font-bold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
                         Inicia sesión
                     </CardTitle>
                     <CardDescription className="text-base text-white/80">
@@ -156,9 +156,9 @@ const LoginPage = () => {
                                         className={`
                                             h-10 text-white bg-white/10 border-white/20 
                                             placeholder:text-white/40 
-                                            focus:bg-white/15 focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/30
+                                            focus:bg-white/15 focus:border-blue-400/50 focus:ring-2 focus:ring-blue-400/30
                                             transition-all duration-300
-                                            ${focusedField === 'email' ? 'shadow-lg shadow-emerald-500/20' : ''}
+                                            ${focusedField === 'email' ? 'shadow-lg shadow-blue-500/20' : ''}
                                         `}
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
@@ -177,7 +177,7 @@ const LoginPage = () => {
                                     </Label>
                                     <a
                                         href="#"
-                                        className="ml-auto text-sm text-emerald-300/80 hover:text-emerald-300 underline-offset-4 hover:underline transition-colors"
+                                        className="ml-auto text-sm text-blue-300/80 hover:text-blue-300 underline-offset-4 hover:underline transition-colors"
                                         onClick={(e) => {
                                             e.preventDefault();
                                             handleRecoverPassword();
@@ -196,9 +196,9 @@ const LoginPage = () => {
                                         className={`
                                             h-10 text-white bg-white/10 border-white/20 pr-12
                                             placeholder:text-white/40
-                                            focus:bg-white/15 focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/30
+                                            focus:bg-white/15 focus:border-blue-400/50 focus:ring-2 focus:ring-blue-400/30
                                             transition-all duration-300
-                                            ${focusedField === 'password' ? 'shadow-lg shadow-emerald-500/20' : ''}
+                                            ${focusedField === 'password' ? 'shadow-lg shadow-blue-500/20' : ''}
                                         `}
                                         value={password} 
                                         onChange={(e) => setPassword(e.target.value)}
@@ -228,11 +228,11 @@ const LoginPage = () => {
                                 type="submit" 
                                 className={`
                                     relative h-10 w-full mt-1 font-semibold text-white overflow-hidden
-                                    bg-gradient-to-r from-emerald-600 to-teal-600 
-                                    hover:from-emerald-500 hover:to-teal-500
+                                    bg-gradient-to-r from-blue-600 to-indigo-600 
+                                    hover:from-blue-500 hover:to-indigo-500
                                     disabled:opacity-50 disabled:cursor-not-allowed 
                                     transition-all duration-300 
-                                    shadow-lg hover:shadow-emerald-500/30 hover:scale-[1.02]
+                                    shadow-lg hover:shadow-blue-500/30 hover:scale-[1.02]
                                     active:scale-[0.98]
                                 `}
                                 disabled={!isFormValid || isLoading}
@@ -257,17 +257,17 @@ const LoginPage = () => {
                         <div className="flex-1 h-px bg-white/20" />
                     </div>
                     
-                    <Button 
+                    {/* <Button 
                         variant="outline" 
                         className="w-full h-9 bg-white/5 border-white/20 text-white hover:bg-white/10 hover:text-white transition-all text-sm"
                     >
                         Crear una cuenta
-                    </Button>
+                    </Button> */}
 
                     {/* Credenciales de prueba */}
                     <div className="w-full p-3 rounded-lg bg-white/5 border border-white/10">
                         <div className="flex items-center gap-2 mb-1">
-                            <Sparkles className="h-3 w-3 text-emerald-400" />
+                            <Sparkles className="h-3 w-3 text-blue-400" />
                             <span className="text-xs font-medium text-white/90">Credenciales de prueba</span>
                         </div>
                         <div className="space-y-0.5 text-xs text-white/70">

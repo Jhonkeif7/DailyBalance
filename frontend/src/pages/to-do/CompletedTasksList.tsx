@@ -43,9 +43,9 @@ interface CompletedTasksListProps {
 // Importance Icon Component
 const ImportanceIcon = ({ level }: { level: 'normal' | 'medium' | 'high' }) => {
   if (level === 'high') {
-    return <Star className="w-4 h-4 fill-blue-500 text-blue-500" aria-hidden="true" />;
+    return <Star className="w-4 h-4 fill-primary text-primary" aria-hidden="true" />;
   }
-  return <Star className="w-4 h-4 text-muted-foreground hover:text-blue-500" aria-hidden="true" />;
+  return <Star className="w-4 h-4 text-muted-foreground hover:text-primary" aria-hidden="true" />;
 };
 
 const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
@@ -92,7 +92,7 @@ const CompletedTasksList: React.FC<CompletedTasksListProps> = ({
                 className="flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
                 aria-label={task.completed ? "Marcar como no completada" : "Marcar como completada"}
               >
-                <CheckCircle2 className="w-5 h-5 text-blue-500 cursor-pointer" aria-hidden="true" />
+                <CheckCircle2 className="w-5 h-5 text-primary cursor-pointer" aria-hidden="true" />
               </button>
 
               <div className="flex-1 min-w-0">

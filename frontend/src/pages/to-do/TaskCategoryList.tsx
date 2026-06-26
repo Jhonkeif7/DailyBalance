@@ -62,9 +62,9 @@ interface TaskCategoryListProps {
 // Importance Icon Component
 const ImportanceIcon = ({ level }: { level: 'normal' | 'medium' | 'high' }) => {
   if (level === 'high') {
-    return <Star className="w-4 h-4 fill-blue-500 text-blue-500" aria-hidden="true" />;
+    return <Star className="w-4 h-4 fill-primary text-primary" aria-hidden="true" />;
   }
-  return <Star className="w-4 h-4 text-muted-foreground hover:text-blue-500" aria-hidden="true" />;
+  return <Star className="w-4 h-4 text-muted-foreground hover:text-primary" aria-hidden="true" />;
 };
 
 const TaskCategoryList: React.FC<TaskCategoryListProps> = ({
@@ -119,9 +119,9 @@ const TaskCategoryList: React.FC<TaskCategoryListProps> = ({
                       aria-label={task.completed ? "Marcar como no completada" : "Marcar como completada"}
                     >
                       {task.completed ? (
-                        <CheckCircle2 className="w-5 h-5 text-blue-500 cursor-pointer" aria-hidden="true" />
+                        <CheckCircle2 className="w-5 h-5 text-primary cursor-pointer" aria-hidden="true" />
                       ) : (
-                        <Circle className="w-5 h-5 text-muted-foreground hover:text-blue-500 cursor-pointer" aria-hidden="true" />
+                        <Circle className="w-5 h-5 text-muted-foreground hover:text-primary cursor-pointer" aria-hidden="true" />
                       )}
                     </button>
 
@@ -140,18 +140,18 @@ const TaskCategoryList: React.FC<TaskCategoryListProps> = ({
                           )}
                           {task.dueDate && (
                             <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3 text-blue-500" aria-hidden="true" />
+                              <Calendar className="w-3 h-3 text-primary" aria-hidden="true" />
                               <span>{getTaskDateLabelForList(task.dueDate)}</span>
                             </span>
                           )}
                           {task.repeat && (
                             <span className="flex items-center gap-1">
-                              <RefreshCw className="w-3 h-3 text-blue-500" aria-hidden="true" />
+                              <RefreshCw className="w-3 h-3 text-primary" aria-hidden="true" />
                             </span>
                           )}
                           {task.reminder && (
                             <span className="flex items-center gap-1">
-                              <Bell className="w-3 h-3 text-blue-500" aria-hidden="true" />
+                              <Bell className="w-3 h-3 text-primary" aria-hidden="true" />
                               <span>{getTaskReminderLabelForList(task)}</span>
                             </span>
                           )}

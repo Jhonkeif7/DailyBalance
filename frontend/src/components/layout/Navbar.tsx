@@ -1,42 +1,52 @@
-import { Bell, Github, Moon, Sun } from "lucide-react";
+import { Github, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useTheme } from "@/hooks/useTheme";
 
 interface NavbarProps {
     title: string;
     subtitle?: string;
+    onMenuToggle?: () => void;
 }
 
-function Navbar({ title, subtitle }: NavbarProps) {
+function Navbar({ title, subtitle, onMenuToggle }: NavbarProps) {
     const { theme, toggleTheme } = useTheme();
 
     return (
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
-            {/* Left Section - Page Title */}
-            <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-6 bg-emerald-500 rounded-full" />
-                    <div>
-                        <h1 className="text-xl font-bold text-foreground">{title}</h1>
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6">
+            {/* Left Section */}
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                {/* Hamburger button — hidden on large screens */}
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="lg:hidden cursor-pointer shrink-0"
+                    onClick={onMenuToggle}
+                    aria-label="Abrir menú"
+                >
+                    <Menu className="h-5 w-5" />
+                </Button>
+
+                {/* Page title */}
+                <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-1.5 h-6 bg-primary rounded-full hidden sm:block shrink-0" />
+                    <div className="min-w-0">
+                        <h1 className="text-base sm:text-xl font-bold text-foreground truncate">
+                            {title}
+                        </h1>
                         {subtitle && (
-                            <p className="text-sm text-muted-foreground">{subtitle}</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block truncate">
+                                {subtitle}
+                            </p>
                         )}
                     </div>
                 </div>
             </div>
 
-            {/* Right Section - Actions */}
-            <div className="flex items-center gap-2">
-                {/* Notifications */}
-                <Button variant="ghost" size="icon" className="relative cursor-pointer">
-                    <Bell className="h-5 w-5" />
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-                </Button>
-
-                {/* Theme Toggle */}
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
+            {/* Right Section */}
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                <Button
+                    variant="ghost"
+                    size="icon"
                     className="cursor-pointer"
                     onClick={toggleTheme}
                 >
@@ -48,8 +58,7 @@ function Navbar({ title, subtitle }: NavbarProps) {
                     <span className="sr-only">Toggle theme</span>
                 </Button>
 
-                {/* GitHub Link */}
-                <Button variant="ghost" size="icon" asChild className="cursor-pointer">
+                <Button variant="ghost" size="icon" asChild className="cursor-pointer hidden sm:flex">
                     <a
                         href="https://github.com"
                         target="_blank"

@@ -881,7 +881,7 @@ const DailyPage = () => {
                 variant="outline" 
                 size="sm"
                 onClick={() => setShowSortDropdown(!showSortDropdown)}
-                className={sortMethod ? 'border-blue-500 text-blue-500' : ''}
+                className={sortMethod ? 'border-primary text-primary' : ''}
               >
                 <ArrowUpDown className="w-4 h-4 mr-1 cursor-pointer" />
                 <span className="text-sm cursor-pointer">Ordenar</span>
@@ -910,44 +910,44 @@ const DailyPage = () => {
                         setSortMethod('importance');
                         setShowSortDropdown(false);
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted/50 transition-colors ${sortMethod === 'importance' ? 'text-blue-500' : 'text-foreground'} cursor-pointer`}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted/50 transition-colors ${sortMethod === 'importance' ? 'text-primary' : 'text-foreground'} cursor-pointer`}
                     >
-                      <Star className={`w-4 h-4 ${sortMethod === 'importance' ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                      <Star className={`w-4 h-4 ${sortMethod === 'importance' ? 'text-primary' : 'text-muted-foreground'}`} />
                       <span className="flex-1 text-left">Importancia</span>
-                      {sortMethod === 'importance' && <Check className="w-4 h-4 text-blue-500" />}
+                      {sortMethod === 'importance' && <Check className="w-4 h-4 text-primary" />}
                     </button>
                     <button
                       onClick={() => {
                         setSortMethod('dueDate');
                         setShowSortDropdown(false);
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted/50 transition-colors ${sortMethod === 'dueDate' ? 'text-blue-500' : 'text-foreground'} cursor-pointer`}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted/50 transition-colors ${sortMethod === 'dueDate' ? 'text-primary' : 'text-foreground'} cursor-pointer`}
                     >
-                      <Calendar className={`w-4 h-4 ${sortMethod === 'dueDate' ? 'text-blue-500' : 'text-muted-foreground'}`} aria-hidden="true" />
+                      <Calendar className={`w-4 h-4 ${sortMethod === 'dueDate' ? 'text-primary' : 'text-muted-foreground'}`} aria-hidden="true" />
                       <span className="flex-1 text-left">Fecha de vencimiento</span>
-                      {sortMethod === 'dueDate' && <Check className="w-4 h-4 text-blue-500" aria-hidden="true" />}
+                      {sortMethod === 'dueDate' && <Check className="w-4 h-4 text-primary" aria-hidden="true" />}
                     </button>
                     <button
                       onClick={() => {
                         setSortMethod('alphabetical');
                         setShowSortDropdown(false);
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted/50 transition-colors ${sortMethod === 'alphabetical' ? 'text-blue-500' : 'text-foreground'} cursor-pointer`}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted/50 transition-colors ${sortMethod === 'alphabetical' ? 'text-primary' : 'text-foreground'} cursor-pointer`}
                     >
-                      <SortAsc className={`w-4 h-4 ${sortMethod === 'alphabetical' ? 'text-blue-500' : 'text-muted-foreground'}`} aria-hidden="true" />
+                      <SortAsc className={`w-4 h-4 ${sortMethod === 'alphabetical' ? 'text-primary' : 'text-muted-foreground'}`} aria-hidden="true" />
                       <span className="flex-1 text-left">Alfabéticamente</span>
-                      {sortMethod === 'alphabetical' && <Check className="w-4 h-4 text-blue-500" aria-hidden="true" />}
+                      {sortMethod === 'alphabetical' && <Check className="w-4 h-4 text-primary" aria-hidden="true" />}
                     </button>
                     <button
                       onClick={() => {
                         setSortMethod('createdAt');
                         setShowSortDropdown(false);
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted/50 transition-colors ${sortMethod === 'createdAt' ? 'text-blue-500' : 'text-foreground'} cursor-pointer`}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted/50 transition-colors ${sortMethod === 'createdAt' ? 'text-primary' : 'text-foreground'} cursor-pointer`}
                     >
-                      <CalendarPlus className={`w-4 h-4 ${sortMethod === 'createdAt' ? 'text-blue-500' : 'text-muted-foreground'}`} aria-hidden="true" />
+                      <CalendarPlus className={`w-4 h-4 ${sortMethod === 'createdAt' ? 'text-primary' : 'text-muted-foreground'}`} aria-hidden="true" />
                       <span className="flex-1 text-left">Fecha de creación</span>
-                      {sortMethod === 'createdAt' && <Check className="w-4 h-4 text-blue-500" aria-hidden="true" />}
+                      {sortMethod === 'createdAt' && <Check className="w-4 h-4 text-primary" aria-hidden="true" />}
                     </button>
                   </div>
                 </div>
@@ -1005,14 +1005,14 @@ const DailyPage = () => {
                             setNewCategoryColor(color.value);
                             setEditingCategory(null);
                           }}
-                          className={`w-6 h-6 rounded-full ${color.value} hover:ring-2 hover:ring-offset-2 hover:ring-blue-500 transition-all ${newCategoryColor === color.value ? 'ring-2 ring-offset-2 ring-blue-500' : ''} cursor-pointer`}
+                          className={`w-6 h-6 rounded-full ${color.value} hover:ring-2 hover:ring-offset-2 hover:ring-primary transition-all ${newCategoryColor === color.value ? 'ring-2 ring-offset-2 ring-primary' : ''} cursor-pointer`}
                           title={color.name}
                         />
                       ))}
                     </div>
                   )}
                 </div>
-                <Button onClick={addCategory} disabled={!newCategoryName.trim()} className="cursor-pointer bg-green-500 hover:bg-green-600">
+                <Button onClick={addCategory} disabled={!newCategoryName.trim()} variant="success" className="cursor-pointer">
                   <Plus className="w-4 h-4 cursor-pointer" />
                 </Button>
               </div>
@@ -1029,7 +1029,7 @@ const DailyPage = () => {
                       <button
                         type="button"
                         onClick={() => setEditingCategory(editingCategory === key ? null : key)}
-                        className={`w-8 h-8 rounded-full ${category.color} hover:ring-2 hover:ring-offset-2 hover:ring-blue-500 transition-all flex items-center justify-center`}
+                        className={`w-8 h-8 rounded-full ${category.color} hover:ring-2 hover:ring-offset-2 hover:ring-primary transition-all flex items-center justify-center`}
                         title="Cambiar color"
                       >
                         <Palette className="w-3 h-3 text-white opacity-0 hover:opacity-100 transition-opacity cursor-pointer" />
@@ -1040,7 +1040,7 @@ const DailyPage = () => {
                             <button
                               key={color.value}
                               onClick={() => updateCategoryColor(key, color.value)}
-                              className={`w-6 h-6 rounded-full ${color.value} hover:ring-2 hover:ring-offset-2 hover:ring-blue-500 transition-all ${category.color === color.value ? 'ring-2 ring-offset-2 ring-blue-500' : ''} cursor-pointer`}
+                              className={`w-6 h-6 rounded-full ${color.value} hover:ring-2 hover:ring-offset-2 hover:ring-primary transition-all ${category.color === color.value ? 'ring-2 ring-offset-2 ring-primary' : ''} cursor-pointer`}
                               title={color.name}
                             />
                           ))}
@@ -1117,7 +1117,7 @@ const DailyPage = () => {
               {/* Date Picker Button with Dropdown */}
               <div className="relative">
                 <button 
-                  className={`flex items-center gap-1.5 px-2 py-1.5 hover:bg-muted rounded-md transition-colors ${newTask.dueDate ? 'text-blue-500' : 'text-muted-foreground'}`}
+                  className={`flex items-center gap-1.5 px-2 py-1.5 hover:bg-muted rounded-md transition-colors ${newTask.dueDate ? 'text-primary' : 'text-muted-foreground'}`}
                   onClick={() => {
                     setShowDatePicker(!showDatePicker);
                     setShowCalendar(false);
@@ -1138,7 +1138,7 @@ const DailyPage = () => {
               {/* Reminder Picker Button with Dropdown */}
               <div className="relative">
                 <button 
-                  className={`flex items-center gap-1.5 px-2 py-1.5 hover:bg-muted rounded-md transition-colors ${selectedReminder ? 'text-blue-500' : 'text-muted-foreground'}`}
+                  className={`flex items-center gap-1.5 px-2 py-1.5 hover:bg-muted rounded-md transition-colors ${selectedReminder ? 'text-primary' : 'text-muted-foreground'}`}
                   onClick={() => {
                     setShowReminderPicker(!showReminderPicker);
                     setShowReminderDateTime(false);
@@ -1159,7 +1159,7 @@ const DailyPage = () => {
               {/* Repeat Picker Button with Dropdown */}
               <div className="relative">
                 <button 
-                  className={`flex items-center gap-1.5 px-2 py-1.5 hover:bg-muted rounded-md transition-colors ${selectedRepeat ? 'text-blue-500' : 'text-muted-foreground'}`}
+                  className={`flex items-center gap-1.5 px-2 py-1.5 hover:bg-muted rounded-md transition-colors ${selectedRepeat ? 'text-primary' : 'text-muted-foreground'}`}
                   onClick={() => setShowRepeatPicker(!showRepeatPicker)}
                   title="Repetir"
                 >

@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/Card";
+import { PageContainer } from "@/components/ui/PageContainer";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/badge";
@@ -174,8 +175,8 @@ function DropZone({
                 relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer
                 transition-all duration-300 
                 ${isDragging 
-                    ? "border-emerald-500 bg-emerald-500/10 scale-[1.02]" 
-                    : "border-border/50 hover:border-emerald-500/50 hover:bg-muted/30"
+                    ? "border-primary bg-primary/10 scale-[1.02]" 
+                    : "border-border/50 hover:border-primary/50 hover:bg-muted/30"
                 }
             `}
             onDragOver={handleDragOver}
@@ -195,9 +196,9 @@ function DropZone({
             <div className="flex flex-col items-center gap-4">
                 <div className={`
                     p-4 rounded-full transition-all duration-300
-                    ${isDragging ? "bg-emerald-500/20" : "bg-muted/50"}
+                    ${isDragging ? "bg-primary/20" : "bg-muted/50"}
                 `}>
-                    <Upload className={`w-8 h-8 ${isDragging ? "text-emerald-500" : "text-muted-foreground"}`} />
+                    <Upload className={`w-8 h-8 ${isDragging ? "text-primary" : "text-muted-foreground"}`} />
                 </div>
                 
                 <div>
@@ -248,17 +249,17 @@ function UploadingFileItem({
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 text-muted-foreground hover:text-red-500"
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                         onClick={() => onCancel(file.id)}
                     >
                         <X className="w-4 h-4" />
                     </Button>
                 )}
                 {file.status === "completed" && (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    <CheckCircle2 className="w-5 h-5 text-success" />
                 )}
                 {file.status === "error" && (
-                    <AlertCircle className="w-5 h-5 text-red-500" />
+                    <AlertCircle className="w-5 h-5 text-destructive" />
                 )}
             </div>
         </div>
@@ -325,7 +326,7 @@ function FileListItem({
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 text-muted-foreground hover:text-red-500"
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                     onClick={() => onDelete(file.id)}
                     title="Eliminar"
                 >
@@ -393,7 +394,7 @@ function FileGridItem({
                         <Download className="w-4 h-4" /> Descargar
                     </button>
                     <button
-                        className="w-full px-3 py-2 text-sm text-left hover:bg-muted flex items-center gap-2 text-red-500"
+                        className="w-full px-3 py-2 text-sm text-left hover:bg-muted flex items-center gap-2 text-destructive"
                         onClick={() => { onDelete(file.id); setShowMenu(false); }}
                     >
                         <Trash2 className="w-4 h-4" /> Eliminar
@@ -499,14 +500,14 @@ const ArchivesPage = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <PageContainer>
             {/* Header con estadísticas */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="bg-card/50 backdrop-blur border-border/50">
+                <Card className="bg-card/60 backdrop-blur border-border/60">
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-emerald-500/10">
-                                <Folder className="w-6 h-6 text-emerald-500" />
+                            <div className="p-3 rounded-xl bg-primary/10">
+                                <Folder className="w-6 h-6 text-primary" />
                             </div>
                             <div>
                                 <p className="text-2xl font-bold">{totalFiles}</p>
@@ -516,7 +517,7 @@ const ArchivesPage = () => {
                     </CardContent>
                 </Card>
                 
-                <Card className="bg-card/50 backdrop-blur border-border/50">
+                <Card className="bg-card/60 backdrop-blur border-border/60">
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
                             <div className="p-3 rounded-xl bg-blue-500/10">
@@ -530,7 +531,7 @@ const ArchivesPage = () => {
                     </CardContent>
                 </Card>
                 
-                <Card className="bg-card/50 backdrop-blur border-border/50">
+                <Card className="bg-card/60 backdrop-blur border-border/60">
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
                             <div className="p-3 rounded-xl bg-purple-500/10">
@@ -546,10 +547,10 @@ const ArchivesPage = () => {
             </div>
 
             {/* Zona de subida */}
-            <Card className="bg-card/50 backdrop-blur border-border/50">
+            <Card className="bg-card/60 backdrop-blur border-border/60">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Upload className="w-5 h-5 text-emerald-500" />
+                        <Upload className="w-5 h-5 text-primary" />
                         Subir Archivos
                     </CardTitle>
                     <CardDescription>
@@ -580,7 +581,7 @@ const ArchivesPage = () => {
             </Card>
 
             {/* Lista de archivos */}
-            <Card className="bg-card/50 backdrop-blur border-border/50">
+            <Card className="bg-card/60 backdrop-blur border-border/60">
                 <CardHeader>
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
@@ -694,7 +695,7 @@ const ArchivesPage = () => {
                     )}
                 </CardContent>
             </Card>
-        </div>
+        </PageContainer>
     );
 };
 

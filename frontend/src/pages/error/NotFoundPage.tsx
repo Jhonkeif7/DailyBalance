@@ -10,11 +10,11 @@ function NotFoundPage() {
             <div className="text-center max-w-md">
                 {/* 404 Number */}
                 <div className="relative mb-8">
-                    <h1 className="text-[150px] font-black text-emerald-500/20 leading-none select-none">
+                    <h1 className="text-[150px] font-black text-primary/20 leading-none select-none">
                         404
                     </h1>
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <Search className="w-20 h-20 text-emerald-500 animate-pulse" />
+                        <Search className="w-20 h-20 text-primary animate-pulse" />
                     </div>
                 </div>
 
@@ -38,7 +38,7 @@ function NotFoundPage() {
                     </Button>
                     <Button
                         onClick={() => navigate("/dashboard")}
-                        className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                        className="gap-2 cursor-pointer"
                     >
                         <Home className="w-4 h-4" />
                         Ir al inicio
@@ -50,7 +50,7 @@ function NotFoundPage() {
                     {[...Array(5)].map((_, i) => (
                         <div
                             key={i}
-                            className="w-2 h-2 rounded-full bg-emerald-500/30"
+                            className="w-2 h-2 rounded-full bg-primary/30"
                             style={{
                                 animation: `pulse 1.5s ease-in-out ${i * 0.2}s infinite`,
                             }}
