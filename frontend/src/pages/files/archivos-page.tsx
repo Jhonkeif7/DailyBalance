@@ -1,10 +1,13 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/Card";
 import { PageContainer } from "@/components/ui/PageContainer";
+import { StatCard } from "@/components/ui/StatCard";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import * as filesService from "@/services/files.service";
 import {
     Select,
     SelectContent,
@@ -49,6 +52,8 @@ interface FileItem {
     status: "completed" | "uploading" | "error";
     progress?: number;
     folder?: string;
+    folderId?: string | null;
+    storagePath: string;
 }
 
 interface UploadingFile {
@@ -57,20 +62,6 @@ interface UploadingFile {
     progress: number;
     status: "uploading" | "completed" | "error";
 }
-
-// Datos de ejemplo
-const initialFiles: FileItem[] = [
-    { id: "1", name: "Presupuesto_2024.xlsx", type: "spreadsheet", size: 245000, uploadDate: new Date("2024-01-15"), status: "completed", folder: "Finanzas" },
-    { id: "2", name: "Contrato_Alquiler.pdf", type: "pdf", size: 1250000, uploadDate: new Date("2024-01-10"), status: "completed", folder: "Documentos" },
-    { id: "3", name: "Factura_Enero.pdf", type: "pdf", size: 89000, uploadDate: new Date("2024-01-20"), status: "completed", folder: "Finanzas" },
-    { id: "4", name: "Foto_Perfil.jpg", type: "image", size: 2100000, uploadDate: new Date("2024-01-18"), status: "completed", folder: "Imágenes" },
-    { id: "5", name: "Notas_Reunión.docx", type: "document", size: 45000, uploadDate: new Date("2024-01-22"), status: "completed", folder: "Trabajo" },
-    { id: "6", name: "Backup_Datos.zip", type: "archive", size: 15000000, uploadDate: new Date("2024-01-05"), status: "completed", folder: "Backups" },
-    { id: "7", name: "Presentación_Q1.pptx", type: "presentation", size: 5400000, uploadDate: new Date("2024-01-25"), status: "completed", folder: "Trabajo" },
-    { id: "8", name: "Script_Automatización.py", type: "code", size: 12000, uploadDate: new Date("2024-01-28"), status: "completed", folder: "Código" },
-];
-
-const folders = ["Todos", "Finanzas", "Documentos", "Imágenes", "Trabajo", "Backups", "Código"];
 
 // Funciones de utilidad
 function formatFileSize(bytes: number): string {
@@ -407,13 +398,57 @@ function FileGridItem({
 
 // Componente principal
 const ArchivesPage = () => {
-    const [files, setFiles] = useState<FileItem[]>(initialFiles);
+    const [files, setFiles] = useState<FileItem[]>([]);
+    const [folderList, setFolderList] = useState<filesService.FileFolder[]>([]);
     const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
     const [viewMode, setViewMode] = useState<"list" | "grid">("list");
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedFolder, setSelectedFolder] = useState("Todos");
     const [selectedType, setSelectedType] = useState("all");
     const [isDragging, setIsDragging] = useState(false);
+    const [, setLoading] = useState(true);
+    const [showNewFolder, setShowNewFolder] = useState(false);
+    const [newFolderName, setNewFolderName] = useState("");
+
+    // Opciones del selector de carpetas.
+    const folders = ["Todos", ...folderList.map((f) => f.name)];
+
+    // Carga inicial: carpetas + archivos.
+    useEffect(() => {
+        let active = true;
+        (async () => {
+            try {
+                const [fldrs, fls] = await Promise.all([
+                    filesService.getFolders(),
+                    filesService.getFiles(),
+                ]);
+                if (!active) return;
+                const nameById = new Map(fldrs.map((f) => [f.id, f.name]));
+                setFolderList(fldrs);
+                setFiles(
+                    fls.map((u) => ({
+                        id: u.id,
+                        name: u.name,
+                        type: u.type,
+                        size: u.size,
+                        uploadDate: new Date(u.createdAt),
+                        status: "completed" as const,
+                        folderId: u.folderId,
+                        folder: (u.folderId && nameById.get(u.folderId)) || "Sin carpeta",
+                        storagePath: u.storagePath,
+                    }))
+                );
+            } catch (err) {
+                console.error(err);
+                toast.error("No se pudieron cargar los archivos");
+            } finally {
+                if (active) setLoading(false);
+            }
+        })();
+        return () => {
+            active = false;
+        };
+    }, []);
 
     // Calcular estadísticas
     const totalSize = files.reduce((sum, f) => sum + f.size, 0);
@@ -427,123 +462,148 @@ const ArchivesPage = () => {
         return matchesSearch && matchesFolder && matchesType;
     });
 
-    // Simular subida de archivos
+    // Subida real a Supabase Storage + metadata.
     const handleFilesSelected = useCallback((fileList: FileList) => {
-        const newUploadingFiles: UploadingFile[] = Array.from(fileList).map((file) => ({
-            id: `upload-${Date.now()}-${Math.random()}`,
-            file,
-            progress: 0,
-            status: "uploading" as const,
-        }));
+        const targetFolder = folderList.find((f) => f.name === selectedFolder) ?? null;
+        const targetName = targetFolder?.name ?? "Sin carpeta";
 
-        setUploadingFiles((prev) => [...prev, ...newUploadingFiles]);
+        Array.from(fileList).forEach((file) => {
+            const uploadId = `upload-${Date.now()}-${Math.random()}`;
+            setUploadingFiles((prev) => [
+                ...prev,
+                { id: uploadId, file, progress: 20, status: "uploading" as const },
+            ]);
 
-        // Simular progreso de subida
-        newUploadingFiles.forEach((uploadFile) => {
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += Math.random() * 15 + 5;
-                if (progress >= 100) {
-                    progress = 100;
-                    clearInterval(interval);
-                    
-                    // Marcar como completado y agregar a la lista
+            filesService
+                .uploadFile(file, {
+                    folderId: targetFolder?.id ?? null,
+                    onProgress: (pct) =>
+                        setUploadingFiles((prev) =>
+                            prev.map((f) => (f.id === uploadId ? { ...f, progress: pct } : f))
+                        ),
+                })
+                .then((created) => {
                     setUploadingFiles((prev) =>
                         prev.map((f) =>
-                            f.id === uploadFile.id ? { ...f, progress: 100, status: "completed" as const } : f
+                            f.id === uploadId ? { ...f, progress: 100, status: "completed" as const } : f
                         )
                     );
-
-                    // Agregar el archivo a la lista principal
-                    const newFile: FileItem = {
-                        id: `file-${Date.now()}-${Math.random()}`,
-                        name: uploadFile.file.name,
-                        type: getFileType(uploadFile.file.name),
-                        size: uploadFile.file.size,
-                        uploadDate: new Date(),
-                        status: "completed",
-                        folder: "Sin carpeta",
-                    };
-                    setFiles((prev) => [newFile, ...prev]);
-
-                    // Remover de la lista de subida después de un momento
+                    setFiles((prev) => [
+                        {
+                            id: created.id,
+                            name: created.name,
+                            type: created.type,
+                            size: created.size,
+                            uploadDate: new Date(created.createdAt),
+                            status: "completed" as const,
+                            folderId: created.folderId,
+                            folder: created.folderId ? targetName : "Sin carpeta",
+                            storagePath: created.storagePath,
+                        },
+                        ...prev,
+                    ]);
                     setTimeout(() => {
-                        setUploadingFiles((prev) => prev.filter((f) => f.id !== uploadFile.id));
-                    }, 2000);
-
-                    toast.success(`${uploadFile.file.name} subido correctamente`);
-                } else {
+                        setUploadingFiles((prev) => prev.filter((f) => f.id !== uploadId));
+                    }, 1500);
+                    toast.success(`${file.name} subido correctamente`);
+                })
+                .catch((err) => {
+                    console.error(err);
                     setUploadingFiles((prev) =>
-                        prev.map((f) => (f.id === uploadFile.id ? { ...f, progress: Math.round(progress) } : f))
+                        prev.map((f) => (f.id === uploadId ? { ...f, status: "error" as const } : f))
                     );
-                }
-            }, 200);
+                    toast.error(`No se pudo subir ${file.name}`);
+                });
         });
-    }, []);
+    }, [folderList, selectedFolder]);
 
     const handleCancelUpload = (id: string) => {
         setUploadingFiles((prev) => prev.filter((f) => f.id !== id));
         toast.info("Subida cancelada");
     };
 
-    const handleDeleteFile = (id: string) => {
-        setFiles((prev) => prev.filter((f) => f.id !== id));
-        toast.success("Archivo eliminado");
+    const handleDeleteFile = async (id: string) => {
+        const file = files.find((f) => f.id === id);
+        if (!file) return;
+        const prev = files;
+        setFiles((curr) => curr.filter((f) => f.id !== id));
+        try {
+            await filesService.deleteFile({ id: file.id, storagePath: file.storagePath });
+            toast.success("Archivo eliminado");
+        } catch (err) {
+            console.error(err);
+            toast.error("No se pudo eliminar el archivo");
+            setFiles(prev);
+        }
     };
 
-    const handleDownloadFile = (file: FileItem) => {
-        toast.success(`Descargando ${file.name}...`);
+    const handleDownloadFile = async (file: FileItem) => {
+        try {
+            const url = await filesService.getSignedUrl(file.storagePath);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = file.name;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } catch (err) {
+            console.error(err);
+            toast.error("No se pudo descargar el archivo");
+        }
     };
 
-    const handlePreviewFile = (file: FileItem) => {
-        toast.info(`Previsualizando ${file.name}`);
+    const handlePreviewFile = async (file: FileItem) => {
+        try {
+            const url = await filesService.getSignedUrl(file.storagePath);
+            window.open(url, "_blank", "noopener,noreferrer");
+        } catch (err) {
+            console.error(err);
+            toast.error("No se pudo previsualizar el archivo");
+        }
+    };
+
+    const handleCreateFolder = async () => {
+        const name = newFolderName.trim();
+        if (!name) return;
+        try {
+            const created = await filesService.createFolder(name);
+            setFolderList((prev) => [...prev, created]);
+            setNewFolderName("");
+            setShowNewFolder(false);
+            toast.success("Carpeta creada");
+        } catch (err) {
+            console.error(err);
+            toast.error("No se pudo crear la carpeta");
+        }
     };
 
     return (
         <PageContainer>
             {/* Header con estadísticas */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="bg-card/60 backdrop-blur border-border/60">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-primary/10">
-                                <Folder className="w-6 h-6 text-primary" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold">{totalFiles}</p>
-                                <p className="text-sm text-muted-foreground">Archivos totales</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                
-                <Card className="bg-card/60 backdrop-blur border-border/60">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-blue-500/10">
-                                <HardDrive className="w-6 h-6 text-blue-500" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold">{formatFileSize(totalSize)}</p>
-                                <p className="text-sm text-muted-foreground">Espacio utilizado</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                
-                <Card className="bg-card/60 backdrop-blur border-border/60">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-purple-500/10">
-                                <Upload className="w-6 h-6 text-purple-500" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold">{uploadingFiles.length}</p>
-                                <p className="text-sm text-muted-foreground">En proceso</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+            <div className="grid grid-cols-1 gap-2 sm:gap-3 md:grid-cols-3">
+                <StatCard
+                    compact
+                    title="Archivos totales"
+                    value={String(totalFiles)}
+                    tone="primary"
+                    icon={<Folder className="h-full w-full" />}
+                />
+                <StatCard
+                    compact
+                    title="Espacio utilizado"
+                    value={formatFileSize(totalSize)}
+                    tone="muted"
+                    icon={<HardDrive className="h-full w-full" />}
+                />
+                <StatCard
+                    compact
+                    title="En proceso"
+                    value={String(uploadingFiles.length)}
+                    tone="primary"
+                    icon={<Upload className="h-full w-full" />}
+                />
             </div>
 
             {/* Zona de subida */}
@@ -592,7 +652,7 @@ const ArchivesPage = () => {
                         </div>
                         
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" className="gap-2">
+                            <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowNewFolder(true)}>
                                 <FolderPlus className="w-4 h-4" />
                                 Nueva carpeta
                             </Button>
@@ -695,6 +755,37 @@ const ArchivesPage = () => {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Diálogo: nueva carpeta */}
+            <Dialog open={showNewFolder} onOpenChange={setShowNewFolder}>
+                <DialogContent className="sm:max-w-[420px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <FolderPlus className="w-5 h-5 text-primary" />
+                            Nueva carpeta
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="py-2">
+                        <Input
+                            autoFocus
+                            placeholder="Nombre de la carpeta…"
+                            value={newFolderName}
+                            onChange={(e) => setNewFolderName(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") handleCreateFolder();
+                            }}
+                        />
+                    </div>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="outline" onClick={() => setShowNewFolder(false)}>
+                            Cancelar
+                        </Button>
+                        <Button variant="success" onClick={handleCreateFolder} disabled={!newFolderName.trim()}>
+                            Crear
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </PageContainer>
     );
 };

@@ -25,13 +25,13 @@ import RepeatPickerDropdown from './RepeatPickerDropdown';
 
 // Types
 interface Step {
-  id: number;
+  id: string;
   text: string;
   completed: boolean;
 }
 
 interface Task {
-  id: number;
+  id: string;
   title: string;
   description: string;
   dueDate: string;
@@ -59,10 +59,10 @@ interface TaskDetailPanelProps {
   selectedTask: Task | null;
   setSelectedTask: (task: Task | null) => void;
   updateTask: (task: Task) => void;
-  deleteTask: (taskId: number) => void;
-  toggleStepComplete: (stepId: number) => void;
-  updateStep: (stepId: number, text: string) => void;
-  deleteStep: (stepId: number) => void;
+  deleteTask: (taskId: string) => void;
+  toggleStepComplete: (stepId: string) => void;
+  updateStep: (stepId: string, text: string) => void;
+  deleteStep: (stepId: string) => void;
   addStep: () => void;
   categories: Categories;
   // Date picker props

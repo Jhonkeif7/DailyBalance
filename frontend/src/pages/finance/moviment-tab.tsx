@@ -17,22 +17,22 @@ import {
 import { Plus, DollarSign, Pencil, Trash2, Search, X, Filter, ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
 import type { Transaction, Category, Account } from "./currency-tab"
-import { formatNumber, formatDate, todayInput, newId } from "./finance-utils"
+import { formatNumber, formatDate, todayInput, resolveCategoryIcon } from "./finance-utils"
 
 interface MovimentTabProps {
   accounts: Account[]
   categories: Category[]
   transactions: Transaction[]
-  upsertTransaction: (transaction: Transaction) => void
-  deleteTransaction: (id: string) => void
+  upsertTransaction: (transaction: Transaction) => Promise<void>
+  deleteTransaction: (id: string) => Promise<void>
 }
 
 interface TransactionForm {
   type: "income" | "expense" | "transfer"
   amount: string
-  category: string
-  account: string
-  paymentMethod: string
+  categoryId: string
+  accountId: string
+  paymentMethod: "card" | "cash" | "transfer"
   date: string
   description: string
   status: "confirmed" | "pending"
@@ -41,8 +41,8 @@ interface TransactionForm {
 const emptyForm: TransactionForm = {
   type: "expense",
   amount: "",
-  category: "",
-  account: "",
+  categoryId: "",
+  accountId: "",
   paymentMethod: "card",
   date: todayInput(),
   description: "",
@@ -86,20 +86,21 @@ function MovimentTab({
     const q = search.trim().toLowerCase()
     return transactions.filter((t) => {
       if (filterType !== "all" && t.type !== filterType) return false
-      if (filterCategory !== "all" && t.category !== filterCategory) return false
-      if (filterAccount !== "all" && t.account !== filterAccount) return false
+      if (filterCategory !== "all" && t.categoryId !== filterCategory) return false
+      if (filterAccount !== "all" && t.accountId !== filterAccount) return false
       if (filterStatus !== "all" && t.status !== filterStatus) return false
       if (q) {
-        const accountName = accounts.find((a) => a.id === t.account)?.name ?? ""
+        const accountName = accounts.find((a) => a.id === t.accountId)?.name ?? ""
+        const categoryName = categories.find((c) => c.id === t.categoryId)?.name ?? ""
         return (
           t.description.toLowerCase().includes(q) ||
-          t.category.toLowerCase().includes(q) ||
+          categoryName.toLowerCase().includes(q) ||
           accountName.toLowerCase().includes(q)
         )
       }
       return true
     })
-  }, [transactions, filterType, filterCategory, filterAccount, filterStatus, search, accounts])
+  }, [transactions, filterType, filterCategory, filterAccount, filterStatus, search, accounts, categories])
 
   // Paginación (10 por página)
   const PAGE_SIZE = 10
@@ -132,40 +133,50 @@ function MovimentTab({
     setForm({
       type: transaction.type,
       amount: String(transaction.amount),
-      category: transaction.category,
-      account: transaction.account,
+      categoryId: transaction.categoryId ?? "",
+      accountId: transaction.accountId,
       paymentMethod: transaction.paymentMethod,
       date: transaction.date,
       description: transaction.description,
-      status: transaction.status,
+      status: transaction.status === "cancelled" ? "pending" : transaction.status,
     })
     setOpen(true)
   }
 
-  const handleSave = () => {
-    if (!form.amount || !form.category || !form.account) {
+  const handleSave = async () => {
+    if (!form.amount || !form.categoryId || !form.accountId) {
       toast.error("Completa monto, categoría y cuenta")
       return
     }
     const transaction: Transaction = {
-      id: editing?.id ?? newId(),
+      id: editing?.id ?? "",
       type: form.type,
       amount: parseFloat(form.amount),
-      category: form.category,
-      account: form.account,
+      categoryId: form.categoryId,
+      accountId: form.accountId,
       paymentMethod: form.paymentMethod,
       date: form.date,
       description: form.description,
       status: form.status,
     }
-    upsertTransaction(transaction)
-    toast.success(editing ? "Movimiento actualizado" : "Movimiento agregado")
-    setOpen(false)
+    try {
+      await upsertTransaction(transaction)
+      toast.success(editing ? "Movimiento actualizado" : "Movimiento agregado")
+      setOpen(false)
+    } catch (err) {
+      console.error(err)
+      toast.error("No se pudo guardar el movimiento")
+    }
   }
 
-  const handleDelete = (transaction: Transaction) => {
-    deleteTransaction(transaction.id)
-    toast.success("Movimiento eliminado")
+  const handleDelete = async (transaction: Transaction) => {
+    try {
+      await deleteTransaction(transaction.id)
+      toast.success("Movimiento eliminado")
+    } catch (err) {
+      console.error(err)
+      toast.error("No se pudo eliminar el movimiento")
+    }
   }
 
   return (
@@ -212,7 +223,7 @@ function MovimentTab({
                 <SelectContent>
                   <SelectItem value="all">Todas las categorías</SelectItem>
                   {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.name}>
+                    <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
                     </SelectItem>
                   ))}
@@ -280,9 +291,10 @@ function MovimentTab({
               </p>
             ) : (
               paginatedTransactions.map((transaction) => {
-                const account = accounts.find((a) => a.id === transaction.account)
-                const category = categories.find((c) => c.name === transaction.category)
-                const Icon = category?.icon || DollarSign
+                const account = accounts.find((a) => a.id === transaction.accountId)
+                const category = categories.find((c) => c.id === transaction.categoryId)
+                const Icon = category ? resolveCategoryIcon(category.icon) : DollarSign
+                const categoryName = category?.name ?? "Sin categoría"
 
                 return (
                   <div
@@ -295,7 +307,7 @@ function MovimentTab({
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <p className="truncate text-sm font-medium">{transaction.category}</p>
+                          <p className="truncate text-sm font-medium">{categoryName}</p>
                           {transaction.status === "pending" && (
                             <Badge variant="outline" className="shrink-0 text-[10px]">
                               Pendiente
@@ -332,7 +344,7 @@ function MovimentTab({
                           variant="ghost"
                           size="icon-sm"
                           onClick={() => openEdit(transaction)}
-                          aria-label={`Editar ${transaction.category}`}
+                          aria-label={`Editar ${categoryName}`}
                         >
                           <Pencil className="h-4 w-4" aria-hidden="true" />
                         </Button>
@@ -341,7 +353,7 @@ function MovimentTab({
                           size="icon-sm"
                           onClick={() => handleDelete(transaction)}
                           className="text-muted-foreground hover:text-destructive"
-                          aria-label={`Eliminar ${transaction.category}`}
+                          aria-label={`Eliminar ${categoryName}`}
                         >
                           <Trash2 className="h-4 w-4" aria-hidden="true" />
                         </Button>
@@ -459,13 +471,13 @@ function MovimentTab({
 
             <div className="space-y-2">
               <Label htmlFor="category">Categoría</Label>
-              <Select value={form.category} onValueChange={(value) => setForm({ ...form, category: value })}>
+              <Select value={form.categoryId} onValueChange={(value) => setForm({ ...form, categoryId: value })}>
                 <SelectTrigger id="category" className="w-full">
                   <SelectValue placeholder="Seleccionar…" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.name}>
+                    <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
                     </SelectItem>
                   ))}
@@ -475,7 +487,7 @@ function MovimentTab({
 
             <div className="space-y-2">
               <Label htmlFor="account">Cuenta</Label>
-              <Select value={form.account} onValueChange={(value) => setForm({ ...form, account: value })}>
+              <Select value={form.accountId} onValueChange={(value) => setForm({ ...form, accountId: value })}>
                 <SelectTrigger id="account" className="w-full">
                   <SelectValue placeholder="Seleccionar…" />
                 </SelectTrigger>
@@ -491,7 +503,7 @@ function MovimentTab({
 
             <div className="space-y-2">
               <Label htmlFor="paymentMethod">Método de pago</Label>
-              <Select value={form.paymentMethod} onValueChange={(value) => setForm({ ...form, paymentMethod: value })}>
+              <Select value={form.paymentMethod} onValueChange={(value) => setForm({ ...form, paymentMethod: value as TransactionForm["paymentMethod"] })}>
                 <SelectTrigger id="paymentMethod" className="w-full">
                   <SelectValue />
                 </SelectTrigger>

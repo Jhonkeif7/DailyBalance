@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import * as reportsService from "@/services/reports.service";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/Card";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,11 +25,6 @@ import {
     Target,
     Wallet,
     CreditCard,
-    ShoppingCart,
-    Car,
-    Home,
-    Utensils,
-    Gamepad2,
     Sparkles,
     ArrowUpRight,
     ArrowDownRight,
@@ -39,7 +36,12 @@ interface CategoryData {
     amount: number;
     percentage: number;
     color: string;
-    icon: React.ReactNode;
+}
+
+interface MonthlyRow {
+    month: string;
+    income: number;
+    expense: number;
 }
 
 interface TransactionSummary {
@@ -49,43 +51,14 @@ interface TransactionSummary {
     balance: number;
 }
 
-// Datos de ejemplo
-const monthlyData = [
-    { month: "Ene", income: 4500, expense: 3200 },
-    { month: "Feb", income: 4200, expense: 2800 },
-    { month: "Mar", income: 5100, expense: 3500 },
-    { month: "Abr", income: 4800, expense: 3100 },
-    { month: "May", income: 5500, expense: 3800 },
-    { month: "Jun", income: 5200, expense: 3400 },
-];
+interface ProductivityRow {
+    day: string;
+    completed: number;
+    total: number;
+}
 
-const categoryExpenses: CategoryData[] = [
-    { name: "Vivienda", amount: 1200, percentage: 35, color: "bg-blue-500", icon: <Home className="w-4 h-4" /> },
-    { name: "Alimentación", amount: 650, percentage: 19, color: "bg-emerald-500", icon: <Utensils className="w-4 h-4" /> },
-    { name: "Transporte", amount: 450, percentage: 13, color: "bg-amber-500", icon: <Car className="w-4 h-4" /> },
-    { name: "Compras", amount: 380, percentage: 11, color: "bg-purple-500", icon: <ShoppingCart className="w-4 h-4" /> },
-    { name: "Entretenimiento", amount: 280, percentage: 8, color: "bg-pink-500", icon: <Gamepad2 className="w-4 h-4" /> },
-    { name: "Otros", amount: 440, percentage: 14, color: "bg-gray-500", icon: <Wallet className="w-4 h-4" /> },
-];
-
-const transactionSummary: TransactionSummary[] = [
-    { category: "Enero", income: 4500, expense: 3200, balance: 1300 },
-    { category: "Febrero", income: 4200, expense: 2800, balance: 1400 },
-    { category: "Marzo", income: 5100, expense: 3500, balance: 1600 },
-    { category: "Abril", income: 4800, expense: 3100, balance: 1700 },
-    { category: "Mayo", income: 5500, expense: 3800, balance: 1700 },
-    { category: "Junio", income: 5200, expense: 3400, balance: 1800 },
-];
-
-const productivityData = [
-    { day: "Lun", completed: 8, total: 10 },
-    { day: "Mar", completed: 6, total: 8 },
-    { day: "Mié", completed: 9, total: 10 },
-    { day: "Jue", completed: 7, total: 9 },
-    { day: "Vie", completed: 5, total: 7 },
-    { day: "Sáb", completed: 3, total: 4 },
-    { day: "Dom", completed: 2, total: 3 },
-];
+const currencyFmt = (n: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
 // Componente de tarjeta de estadística
 function StatCard({ 
@@ -132,9 +105,12 @@ function StatCard({
 }
 
 // Componente de gráfico de barras
-function BarChartComponent({ data }: { data: typeof monthlyData }) {
-    const maxValue = Math.max(...data.flatMap(d => [d.income, d.expense]));
-    
+function BarChartComponent({ data }: { data: MonthlyRow[] }) {
+    if (data.length === 0) {
+        return <p className="py-10 text-center text-sm text-muted-foreground">Sin datos para el período.</p>;
+    }
+    const maxValue = Math.max(1, ...data.flatMap(d => [d.income, d.expense]));
+
     return (
         <div className="h-64 flex items-end justify-between gap-3 px-2">
             {data.map((item) => (
@@ -158,8 +134,29 @@ function BarChartComponent({ data }: { data: typeof monthlyData }) {
     );
 }
 
-// Componente de gráfico circular (simulado)
+// Convierte una clase tailwind "bg-*" o un hex a un color CSS usable en SVG/inline.
+const TAILWIND_HEX: Record<string, string> = {
+    "bg-blue-500": "#3b82f6",
+    "bg-emerald-500": "#10b981",
+    "bg-amber-500": "#f59e0b",
+    "bg-purple-500": "#a855f7",
+    "bg-pink-500": "#ec4899",
+    "bg-gray-500": "#6b7280",
+    "bg-red-500": "#ef4444",
+    "bg-green-500": "#22c55e",
+    "bg-cyan-500": "#06b6d4",
+    "bg-indigo-500": "#6366f1",
+    "bg-orange-500": "#f97316",
+    "bg-yellow-500": "#eab308",
+};
+const toCssColor = (color: string) => (color.startsWith("#") ? color : TAILWIND_HEX[color] ?? "#6b7280");
+
+// Componente de gráfico circular
 function PieChartComponent({ data }: { data: CategoryData[] }) {
+    const total = data.reduce((sum, c) => sum + c.amount, 0);
+    if (data.length === 0) {
+        return <p className="py-10 text-center text-sm text-muted-foreground">Sin gastos registrados.</p>;
+    }
     return (
         <div className="flex flex-col gap-4">
             {/* Círculo visual */}
@@ -167,14 +164,6 @@ function PieChartComponent({ data }: { data: CategoryData[] }) {
                 <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                     {data.map((category, index) => {
                         const offset = data.slice(0, index).reduce((sum, c) => sum + c.percentage, 0);
-                        const colorClasses: Record<string, string> = {
-                            "bg-blue-500": "#3b82f6",
-                            "bg-emerald-500": "#10b981",
-                            "bg-amber-500": "#f59e0b",
-                            "bg-purple-500": "#a855f7",
-                            "bg-pink-500": "#ec4899",
-                            "bg-gray-500": "#6b7280",
-                        };
                         return (
                             <circle
                                 key={category.name}
@@ -182,7 +171,7 @@ function PieChartComponent({ data }: { data: CategoryData[] }) {
                                 cy="50"
                                 r="40"
                                 fill="none"
-                                stroke={colorClasses[category.color] || "#6b7280"}
+                                stroke={toCssColor(category.color)}
                                 strokeWidth="20"
                                 strokeDasharray={`${category.percentage * 2.51} 251`}
                                 strokeDashoffset={`-${offset * 2.51}`}
@@ -193,17 +182,17 @@ function PieChartComponent({ data }: { data: CategoryData[] }) {
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                        <p className="text-2xl font-bold">$3,400</p>
+                        <p className="text-2xl font-bold">{currencyFmt(total)}</p>
                         <p className="text-xs text-muted-foreground">Total</p>
                     </div>
                 </div>
             </div>
-            
+
             {/* Leyenda */}
             <div className="grid grid-cols-2 gap-2">
                 {data.map((category) => (
                     <div key={category.name} className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${category.color}`} />
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: toCssColor(category.color) }} />
                         <span className="text-xs text-muted-foreground">{category.name}</span>
                         <span className="text-xs font-medium ml-auto">{category.percentage}%</span>
                     </div>
@@ -276,6 +265,100 @@ function SummaryTable({ data }: { data: TransactionSummary[] }) {
 
 const ReportPage = () => {
     const [period, setPeriod] = useState("6months");
+    const [monthly, setMonthly] = useState<reportsService.MonthlyFinanceSummary[]>([]);
+    const [expenses, setExpenses] = useState<reportsService.ExpenseByCategory[]>([]);
+    const [daily, setDaily] = useState<reportsService.DailyProductivity[]>([]);
+    const [, setLoading] = useState(true);
+
+    useEffect(() => {
+        let active = true;
+        (async () => {
+            try {
+                const [m, e, d] = await Promise.all([
+                    reportsService.getMonthlyFinanceSummary(),
+                    reportsService.getExpensesByCategory(),
+                    reportsService.getDailyProductivity(),
+                ]);
+                if (!active) return;
+                setMonthly(m);
+                setExpenses(e);
+                setDaily(d);
+            } catch (err) {
+                console.error(err);
+                toast.error("No se pudieron cargar los reportes");
+            } finally {
+                if (active) setLoading(false);
+            }
+        })();
+        return () => {
+            active = false;
+        };
+    }, []);
+
+    // Etiqueta de mes legible a partir de "2026-01" o fecha ISO.
+    const monthLabel = (month: string) => {
+        const d = month.length === 7 ? new Date(`${month}-01T00:00:00`) : new Date(month);
+        return isNaN(d.getTime())
+            ? month
+            : new Intl.DateTimeFormat("es-ES", { month: "short" }).format(d);
+    };
+
+    const barData: MonthlyRow[] = useMemo(
+        () => monthly.map((m) => ({ month: monthLabel(m.month), income: m.income, expense: m.expenses })),
+        [monthly]
+    );
+
+    const categoryData: CategoryData[] = useMemo(() => {
+        const total = expenses.reduce((sum, e) => sum + e.total, 0);
+        return expenses.map((e) => ({
+            name: e.categoryName,
+            amount: e.total,
+            percentage: total > 0 ? Math.round((e.total / total) * 100) : 0,
+            color: e.color,
+        }));
+    }, [expenses]);
+
+    const summaryData: TransactionSummary[] = useMemo(
+        () =>
+            monthly.map((m) => ({
+                category: monthLabel(m.month),
+                income: m.income,
+                expense: m.expenses,
+                balance: m.balance,
+            })),
+        [monthly]
+    );
+
+    const productivityData: ProductivityRow[] = useMemo(
+        () =>
+            daily.map((d) => {
+                const date = new Date(d.day);
+                const label = isNaN(date.getTime())
+                    ? d.day
+                    : date.toLocaleDateString("es-ES", { weekday: "short" }).replace(".", "");
+                return { day: label, completed: d.completed, total: d.total };
+            }),
+        [daily]
+    );
+
+    // KPIs financieros derivados.
+    const totalIncome = monthly.reduce((s, m) => s + m.income, 0);
+    const totalExpense = monthly.reduce((s, m) => s + m.expenses, 0);
+    const netBalance = totalIncome - totalExpense;
+    const monthlyAvg = monthly.length > 0 ? netBalance / monthly.length : 0;
+
+    // KPIs de productividad derivados.
+    const totalCompleted = daily.reduce((s, d) => s + d.completed, 0);
+    const totalPlanned = daily.reduce((s, d) => s + d.total, 0);
+    const successRate = totalPlanned > 0 ? Math.round((totalCompleted / totalPlanned) * 100) : 0;
+    const productiveDays = daily.filter((d) => d.total > 0 && d.completed / d.total >= 0.8).length;
+    const bestDay = productivityData.reduce<{ label: string; ratio: number }>(
+        (best, d) => {
+            const ratio = d.total > 0 ? d.completed / d.total : 0;
+            return ratio > best.ratio ? { label: d.day, ratio } : best;
+        },
+        { label: "—", ratio: -1 }
+    ).label;
 
     return (
         <PageContainer>
@@ -335,35 +418,29 @@ const ReportPage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <StatCard
                             title="Ingresos Totales"
-                            value="$29,300"
-                            description="Últimos 6 meses"
-                            trend="up"
-                            trendValue="+12.5%"
+                            value={currencyFmt(totalIncome)}
+                            description={`${monthly.length} meses`}
                             icon={<TrendingUp className="w-5 h-5" />}
                         />
                         <StatCard
                             title="Gastos Totales"
-                            value="$19,800"
-                            description="Últimos 6 meses"
-                            trend="down"
-                            trendValue="-5.2%"
+                            value={currencyFmt(totalExpense)}
+                            description={`${monthly.length} meses`}
                             icon={<TrendingDown className="w-5 h-5" />}
-                            iconColor="bg-red-500/10 text-red-500"
+                            iconColor="bg-destructive/10 text-destructive"
                         />
                         <StatCard
                             title="Balance Neto"
-                            value="$9,500"
+                            value={currencyFmt(netBalance)}
                             description="Ahorro acumulado"
-                            trend="up"
-                            trendValue="+18.3%"
                             icon={<Wallet className="w-5 h-5" />}
                         />
                         <StatCard
                             title="Promedio Mensual"
-                            value="$1,583"
+                            value={currencyFmt(monthlyAvg)}
                             description="Ahorro por mes"
                             icon={<CreditCard className="w-5 h-5" />}
-                            iconColor="bg-blue-500/10 text-blue-500"
+                            iconColor="bg-primary/10 text-primary"
                         />
                     </div>
 
@@ -390,7 +467,7 @@ const ReportPage = () => {
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <BarChartComponent data={monthlyData} />
+                                <BarChartComponent data={barData} />
                             </CardContent>
                         </Card>
 
@@ -401,7 +478,7 @@ const ReportPage = () => {
                                 <CardDescription>Distribución del mes actual</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <PieChartComponent data={categoryExpenses} />
+                                <PieChartComponent data={categoryData} />
                             </CardContent>
                         </Card>
                     </div>
@@ -414,19 +491,26 @@ const ReportPage = () => {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                {categoryExpenses.map((category) => (
+                                {categoryData.length === 0 && (
+                                    <p className="py-6 text-center text-sm text-muted-foreground">Sin gastos registrados.</p>
+                                )}
+                                {categoryData.map((category) => (
                                     <div key={category.name} className="space-y-2">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded-lg ${category.color}/10`}>
-                                                    <span className={category.color.replace("bg-", "text-")}>
-                                                        {category.icon}
-                                                    </span>
+                                                <div
+                                                    className="w-9 h-9 rounded-lg flex items-center justify-center"
+                                                    style={{ backgroundColor: `${toCssColor(category.color)}1a` }}
+                                                >
+                                                    <span
+                                                        className="w-3 h-3 rounded-full"
+                                                        style={{ backgroundColor: toCssColor(category.color) }}
+                                                    />
                                                 </div>
                                                 <span className="font-medium">{category.name}</span>
                                             </div>
                                             <div className="text-right">
-                                                <span className="font-semibold">${category.amount}</span>
+                                                <span className="font-semibold">{currencyFmt(category.amount)}</span>
                                                 <span className="text-muted-foreground text-sm ml-2">({category.percentage}%)</span>
                                             </div>
                                         </div>
@@ -447,32 +531,28 @@ const ReportPage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <StatCard
                             title="Tareas Completadas"
-                            value="156"
-                            description="Este mes"
-                            trend="up"
-                            trendValue="+23%"
+                            value={String(totalCompleted)}
+                            description="En el período"
                             icon={<Target className="w-5 h-5" />}
                         />
                         <StatCard
                             title="Tasa de Éxito"
-                            value="87%"
-                            description="Promedio mensual"
-                            trend="up"
-                            trendValue="+5%"
+                            value={`${successRate}%`}
+                            description="Completadas vs planeadas"
                             icon={<Sparkles className="w-5 h-5" />}
                         />
                         <StatCard
-                            title="Racha Actual"
-                            value="12 días"
-                            description="Días consecutivos productivos"
+                            title="Días Productivos"
+                            value={`${productiveDays} días`}
+                            description="Con 80% o más completado"
                             icon={<TrendingUp className="w-5 h-5" />}
                         />
                         <StatCard
                             title="Mejor Día"
-                            value="Miércoles"
+                            value={bestDay}
                             description="Día más productivo"
                             icon={<Calendar className="w-5 h-5" />}
-                            iconColor="bg-purple-500/10 text-purple-500"
+                            iconColor="bg-primary/10 text-primary"
                         />
                     </div>
 
@@ -484,8 +564,11 @@ const ReportPage = () => {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                {productivityData.map((day) => (
-                                    <div key={day.day} className="space-y-2">
+                                {productivityData.length === 0 && (
+                                    <p className="py-6 text-center text-sm text-muted-foreground">Sin actividad registrada.</p>
+                                )}
+                                {productivityData.map((day, index) => (
+                                    <div key={`${day.day}-${index}`} className="space-y-2">
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="font-medium w-12">{day.day}</span>
                                             <div className="flex-1 mx-4">
@@ -534,7 +617,7 @@ const ReportPage = () => {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <SummaryTable data={transactionSummary} />
+                            <SummaryTable data={summaryData} />
                         </CardContent>
                     </Card>
 

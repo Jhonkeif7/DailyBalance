@@ -28,6 +28,8 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/Input';
+import { toast } from 'sonner';
+import * as tasksService from '@/services/tasks.service';
 import NewTaskDialog from './dailyPage-new-form';
 import TaskDetailPanel from './dailyPage-detail-form';
 import DatePickerDropdown from './DatePickerDropdown';
@@ -38,19 +40,19 @@ import CompletedTasksList from './CompletedTasksList';
 
 // Types
 interface Step {
-  id: number;
+  id: string;
   text: string;
   completed: boolean;
 }
 
 interface Task {
-  id: number;
+  id: string;
   title: string;
   description: string;
   dueDate: string;
   importance: 'normal' | 'medium' | 'high';
   completed: boolean;
-  category: string;
+  category: string; // categoryId (UUID) o '' si no tiene categoría
   steps: Step[];
   createdAt?: string;
   reminder?: string; // 'later' | 'tomorrow' | 'nextweek' | 'custom' | ''
@@ -72,49 +74,38 @@ interface ExpandedCategories {
   [key: string]: boolean;
 }
 
+// Mapea una tarea del servicio (Supabase) al modelo local del componente.
+const toPageTask = (t: tasksService.Task): Task => ({
+  id: t.id,
+  title: t.title,
+  description: t.description,
+  dueDate: t.dueDate,
+  importance: t.importance,
+  completed: t.completed,
+  category: t.categoryId ?? '',
+  steps: t.steps.map((s) => ({ id: s.id, text: s.text, completed: s.completed })),
+  createdAt: t.createdAt
+    ? new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'long' }).format(new Date(t.createdAt))
+    : undefined,
+  reminder: t.reminder ?? '',
+  reminderDate: t.reminderDate ?? '',
+  reminderTime: t.reminderTime ?? '',
+  repeat: t.repeat ?? '',
+});
+
 const DailyPage = () => {
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: 1,
-      title: 'Planes de Pago - vigentes - Crear CRUD',
-      description: '',
-      dueDate: '',
-      importance: 'normal',
-      completed: false,
-      category: 'nubeteck',
-      steps: [],
-      createdAt: new Date().toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'long' }),
-    },
-    {
-      id: 2,
-      title: 'Integraciones de API - Crear API Financiero',
-      description: '',
-      dueDate: '',
-      importance: 'high',
-      completed: false,
-      category: 'nubeteck',
-      steps: [],
-      createdAt: new Date().toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'long' }),
-    }
-  ]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [, setLoading] = useState(true);
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showNewTaskDialog, setShowNewTaskDialog] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState<ExpandedCategories>({
-    outlier: true,
-    nubeteck: true,
-    personal: true
-  });
+  const [expandedCategories, setExpandedCategories] = useState<ExpandedCategories>({});
 
   const [showCompleted, setShowCompleted] = useState(true);
-  
+
   // Categories management states
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
-  const [categories, setCategories] = useState<Categories>({
-    outlier: { name: 'Trabajo Outlier', color: 'bg-blue-500' },
-    nubeteck: { name: 'Trabajo Nubeteck', color: 'bg-purple-500' },
-    personal: { name: 'Personal', color: 'bg-green-500' }
-  });
+  const [categories, setCategories] = useState<Categories>({});
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('bg-blue-500');
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
@@ -213,9 +204,69 @@ const DailyPage = () => {
     description: '',
     dueDate: '',
     importance: 'normal',
-    category: 'personal',
+    category: '',
     steps: []
   });
+
+  // Temporizadores para guardar (debounce) ediciones de texto.
+  const taskSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const stepSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  // Carga inicial desde Supabase.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [cats, ts] = await Promise.all([
+          tasksService.getCategories(),
+          tasksService.getTasks(),
+        ]);
+        if (!active) return;
+        const map: Categories = {};
+        const expanded: ExpandedCategories = {};
+        for (const c of cats) {
+          map[c.id] = { name: c.name, color: c.color };
+          expanded[c.id] = true;
+        }
+        setCategories(map);
+        setExpandedCategories(expanded);
+        setTasks(ts.map(toPageTask));
+        setNewTask((prev) => ({ ...prev, category: cats[0]?.id ?? '' }));
+      } catch (err) {
+        console.error(err);
+        toast.error('No se pudieron cargar las tareas');
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Persiste los campos escalares de una tarea (con debounce por tarea).
+  const persistTaskScalars = (task: Task) => {
+    if (taskSaveTimers.current[task.id]) clearTimeout(taskSaveTimers.current[task.id]);
+    taskSaveTimers.current[task.id] = setTimeout(() => {
+      tasksService
+        .updateTask(task.id, {
+          title: task.title,
+          description: task.description,
+          categoryId: task.category || null,
+          dueDate: task.dueDate,
+          importance: task.importance,
+          completed: task.completed,
+          reminder: task.reminder,
+          reminderDate: task.reminderDate,
+          reminderTime: task.reminderTime,
+          repeat: task.repeat,
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error('No se pudo guardar la tarea');
+        });
+    }, 500);
+  };
 
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => ({
@@ -225,146 +276,198 @@ const DailyPage = () => {
   };
 
   // Category management functions
-  const addCategory = () => {
-    if (newCategoryName.trim()) {
-      const key = newCategoryName.toLowerCase().replace(/\s+/g, '_');
-      if (!categories[key]) {
-        setCategories(prev => ({
-          ...prev,
-          [key]: { name: newCategoryName.trim(), color: newCategoryColor }
-        }));
-        setExpandedCategories(prev => ({
-          ...prev,
-          [key]: true
-        }));
-        setNewCategoryName('');
-        setNewCategoryColor('bg-blue-500');
-      }
+  const addCategory = async () => {
+    const name = newCategoryName.trim();
+    if (!name) return;
+    try {
+      const created = await tasksService.createCategory({ name, color: newCategoryColor });
+      setCategories(prev => ({ ...prev, [created.id]: { name: created.name, color: created.color } }));
+      setExpandedCategories(prev => ({ ...prev, [created.id]: true }));
+      setNewTask(prev => (prev.category ? prev : { ...prev, category: created.id }));
+      setNewCategoryName('');
+      setNewCategoryColor('bg-blue-500');
+    } catch (err) {
+      console.error(err);
+      toast.error('No se pudo crear la categoría');
     }
   };
 
   const updateCategoryColor = (categoryKey: string, color: string) => {
-    setCategories(prev => ({
-      ...prev,
-      [categoryKey]: { ...prev[categoryKey], color }
-    }));
+    setCategories(prev => ({ ...prev, [categoryKey]: { ...prev[categoryKey], color } }));
     setEditingCategory(null);
+    tasksService.updateCategory(categoryKey, { color }).catch((err) => {
+      console.error(err);
+      toast.error('No se pudo actualizar la categoría');
+    });
   };
 
   const updateCategoryName = (categoryKey: string, newName: string) => {
-    setCategories(prev => ({
-      ...prev,
-      [categoryKey]: { ...prev[categoryKey], name: newName }
-    }));
+    setCategories(prev => ({ ...prev, [categoryKey]: { ...prev[categoryKey], name: newName } }));
+    if (taskSaveTimers.current[`cat-${categoryKey}`]) clearTimeout(taskSaveTimers.current[`cat-${categoryKey}`]);
+    taskSaveTimers.current[`cat-${categoryKey}`] = setTimeout(() => {
+      tasksService.updateCategory(categoryKey, { name: newName }).catch((err) => {
+        console.error(err);
+        toast.error('No se pudo actualizar la categoría');
+      });
+    }, 500);
   };
 
-  const deleteCategory = (categoryKey: string) => {
-    // Check if there are tasks in this category
+  const deleteCategory = async (categoryKey: string) => {
     const tasksInCategory = tasks.filter(t => t.category === categoryKey);
+    const defaultCategory = Object.keys(categories).find(k => k !== categoryKey) || '';
+    // Reasigna las tareas de esa categoría antes de eliminarla.
     if (tasksInCategory.length > 0) {
-      // Move tasks to 'personal' or first available category
-      const defaultCategory = Object.keys(categories).find(k => k !== categoryKey) || 'personal';
-      setTasks(tasks.map(t => 
-        t.category === categoryKey ? { ...t, category: defaultCategory } : t
-      ));
+      setTasks(prev => prev.map(t => (t.category === categoryKey ? { ...t, category: defaultCategory } : t)));
+      await Promise.all(
+        tasksInCategory.map(t =>
+          tasksService.updateTask(t.id, { categoryId: defaultCategory || null }).catch((err) => console.error(err))
+        )
+      );
     }
-    
-    // Remove category
-    const { [categoryKey]: removed, ...rest } = categories;
-    setCategories(rest);
-    
-    // Remove from expanded categories
-    const { [categoryKey]: removedExpanded, ...restExpanded } = expandedCategories;
-    setExpandedCategories(restExpanded);
+    setCategories(prev => {
+      const { [categoryKey]: _removed, ...rest } = prev;
+      return rest;
+    });
+    setExpandedCategories(prev => {
+      const { [categoryKey]: _removedExpanded, ...restExpanded } = prev;
+      return restExpanded;
+    });
+    try {
+      await tasksService.deleteCategory(categoryKey);
+    } catch (err) {
+      console.error(err);
+      toast.error('No se pudo eliminar la categoría');
+    }
   };
 
-  const addTask = () => {
-    if (newTask.title.trim()) {
-      setTasks([...tasks, {
-        ...newTask,
-        id: Date.now(),
-        completed: false,
-        steps: [],
-        createdAt: new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', month: 'long' }).format(new Date()),
-      }]);
+  const addTask = async () => {
+    if (!newTask.title.trim()) return;
+    try {
+      const created = await tasksService.createTask({
+        title: newTask.title.trim(),
+        description: newTask.description,
+        categoryId: newTask.category || null,
+        dueDate: newTask.dueDate,
+        importance: newTask.importance,
+        reminder: selectedReminder || undefined,
+        reminderDate: selectedReminder === 'custom' ? formatDateForInput(reminderDate) : undefined,
+        reminderTime: selectedReminder === 'custom' ? reminderTime : undefined,
+        repeat: selectedRepeat || undefined,
+      });
+      setTasks(prev => [...prev, toPageTask(created)]);
       setNewTask({
         title: '',
         description: '',
         dueDate: '',
         importance: 'normal',
-        category: 'personal',
+        category: newTask.category,
         steps: []
       });
+      setSelectedReminder('');
+      setSelectedRepeat('');
       setShowNewTaskDialog(false);
+    } catch (err) {
+      console.error(err);
+      toast.error('No se pudo crear la tarea');
     }
   };
 
   const updateTask = (updatedTask: Task) => {
-    setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t));
+    setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+    setSelectedTask(updatedTask);
+    persistTaskScalars(updatedTask);
+  };
+
+  const deleteTask = async (taskId: string) => {
+    const prev = tasks;
+    setTasks(curr => curr.filter(t => t.id !== taskId));
+    setSelectedTask(null);
+    try {
+      await tasksService.deleteTask(taskId);
+    } catch (err) {
+      console.error(err);
+      toast.error('No se pudo eliminar la tarea');
+      setTasks(prev);
+    }
+  };
+
+  const toggleTaskComplete = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const updated = { ...task, completed: !task.completed };
+    setTasks(prev => prev.map(t => t.id === taskId ? updated : t));
+    if (selectedTask && selectedTask.id === taskId) setSelectedTask(updated);
+    persistTaskScalars(updated);
+  };
+
+  const toggleTaskImportance = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const updated: Task = { ...task, importance: task.importance === 'high' ? 'normal' : 'high' };
+    setTasks(prev => prev.map(t => t.id === taskId ? updated : t));
+    if (selectedTask && selectedTask.id === taskId) setSelectedTask(updated);
+    persistTaskScalars(updated);
+  };
+
+  const applyStepsLocal = (updatedTask: Task) => {
+    setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
     setSelectedTask(updatedTask);
   };
 
-  const deleteTask = (taskId: number) => {
-    setTasks(tasks.filter(t => t.id !== taskId));
-    setSelectedTask(null);
-  };
-
-  const toggleTaskComplete = (taskId: number) => {
-    setTasks(tasks.map(t => 
-      t.id === taskId ? { ...t, completed: !t.completed } : t
-    ));
-    if (selectedTask && selectedTask.id === taskId) {
-      setSelectedTask({ ...selectedTask, completed: !selectedTask.completed });
-    }
-  };
-
-  const toggleTaskImportance = (taskId: number) => {
-    setTasks(tasks.map(t => 
-      t.id === taskId ? { ...t, importance: t.importance === 'high' ? 'normal' : 'high' } : t
-    ));
-    if (selectedTask && selectedTask.id === taskId) {
-      setSelectedTask({ ...selectedTask, importance: selectedTask.importance === 'high' ? 'normal' : 'high' });
-    }
-  };
-
-  const addStep = () => {
-    if (selectedTask) {
-      const updatedTask: Task = {
+  const addStep = async () => {
+    if (!selectedTask) return;
+    try {
+      const created = await tasksService.addStep(selectedTask.id, '', selectedTask.steps.length);
+      applyStepsLocal({
         ...selectedTask,
-        steps: [...selectedTask.steps, { id: Date.now(), text: '', completed: false }]
-      };
-      updateTask(updatedTask);
+        steps: [...selectedTask.steps, { id: created.id, text: created.text, completed: created.completed }],
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error('No se pudo agregar el paso');
     }
   };
 
-  const updateStep = (stepId: number, text: string) => {
-    if (selectedTask) {
-      const updatedTask: Task = {
-        ...selectedTask,
-        steps: selectedTask.steps.map(s => s.id === stepId ? { ...s, text } : s)
-      };
-      updateTask(updatedTask);
-    }
+  const updateStep = (stepId: string, text: string) => {
+    if (!selectedTask) return;
+    applyStepsLocal({
+      ...selectedTask,
+      steps: selectedTask.steps.map(s => s.id === stepId ? { ...s, text } : s),
+    });
+    if (stepSaveTimers.current[stepId]) clearTimeout(stepSaveTimers.current[stepId]);
+    stepSaveTimers.current[stepId] = setTimeout(() => {
+      tasksService.updateStep(stepId, { text }).catch((err) => {
+        console.error(err);
+        toast.error('No se pudo guardar el paso');
+      });
+    }, 500);
   };
 
-  const toggleStepComplete = (stepId: number) => {
-    if (selectedTask) {
-      const updatedTask: Task = {
-        ...selectedTask,
-        steps: selectedTask.steps.map(s => s.id === stepId ? { ...s, completed: !s.completed } : s)
-      };
-      updateTask(updatedTask);
-    }
+  const toggleStepComplete = (stepId: string) => {
+    if (!selectedTask) return;
+    const step = selectedTask.steps.find(s => s.id === stepId);
+    if (!step) return;
+    const completed = !step.completed;
+    applyStepsLocal({
+      ...selectedTask,
+      steps: selectedTask.steps.map(s => s.id === stepId ? { ...s, completed } : s),
+    });
+    tasksService.updateStep(stepId, { completed }).catch((err) => {
+      console.error(err);
+      toast.error('No se pudo actualizar el paso');
+    });
   };
 
-  const deleteStep = (stepId: number) => {
-    if (selectedTask) {
-      const updatedTask: Task = {
-        ...selectedTask,
-        steps: selectedTask.steps.filter(s => s.id !== stepId)
-      };
-      updateTask(updatedTask);
-    }
+  const deleteStep = (stepId: string) => {
+    if (!selectedTask) return;
+    applyStepsLocal({
+      ...selectedTask,
+      steps: selectedTask.steps.filter(s => s.id !== stepId),
+    });
+    tasksService.deleteStep(stepId).catch((err) => {
+      console.error(err);
+      toast.error('No se pudo eliminar el paso');
+    });
   };
 
   const getTasksByCategory = (category: string) => {

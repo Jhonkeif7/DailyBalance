@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "../../components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "../../components/ui/Card";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,7 @@ import logo from "@/assets/logo_dailybalance.png";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Loader2, Mail, Lock, Sparkles } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 
 const LoginPage = () => {
     const [email, setEmail] = useState("");
@@ -15,28 +16,37 @@ const LoginPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [focusedField, setFocusedField] = useState<string | null>(null);
     const navigate = useNavigate();
+    const { session, signIn } = useAuth();
     const oficial_email = "oficial@dailybalance.com";
-    const oficial_password = "123456";
     const [isRecoveringPassword, setIsRecoveringPassword] = useState(false);
     const [isOpenModal, setIsOpenModal] = useState(false);
 
     const isFormValid = email.trim() !== "" && password.trim() !== "";
 
+    // Si ya hay sesión activa, evita ver el login de nuevo.
+    useEffect(() => {
+        if (session) navigate("/dashboard", { replace: true });
+    }, [session, navigate]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!isFormValid) return;
-        
+
         setIsLoading(true);
-        
-        // Simular delay de red
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        if (email === oficial_email && password === oficial_password) {
+
+        try {
+            await signIn(email.trim(), password);
             toast.success("Inicio de sesión exitoso");
-            navigate("/dashboard");
-        } else {
-            toast.error("Correo o contraseña incorrectos");
+            navigate("/dashboard", { replace: true });
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : "Correo o contraseña incorrectos";
+            toast.error(
+                message === "Invalid login credentials"
+                    ? "Correo o contraseña incorrectos"
+                    : message
+            );
             setIsLoading(false);
         }
     };
@@ -272,7 +282,7 @@ const LoginPage = () => {
                         </div>
                         <div className="space-y-0.5 text-xs text-white/70">
                             <p><span className="text-white/50">Correo:</span> {oficial_email}</p>
-                            <p><span className="text-white/50">Contraseña:</span> {oficial_password}</p>
+                            <p><span className="text-white/50">Contraseña:</span> la definida en Supabase</p>
                         </div>
                     </div>
                 </CardFooter>

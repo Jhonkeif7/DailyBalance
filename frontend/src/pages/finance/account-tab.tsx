@@ -12,26 +12,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Pencil, Trash2, Plus, Landmark, Wallet, CreditCard, Smartphone } from "lucide-react"
-import type { LucideIcon } from "lucide-react"
+import { Pencil, Trash2, Plus } from "lucide-react"
 import { toast } from "sonner"
 import type { Account } from "./currency-tab"
-import { newId } from "./finance-utils"
+import { resolveAccountIcon } from "./finance-utils"
 
 interface AccountTabProps {
   accounts: Account[]
-  upsertAccount: (account: Account) => void
-  deleteAccount: (id: string) => void
+  upsertAccount: (account: Account) => Promise<void>
+  deleteAccount: (id: string) => Promise<void>
 }
 
-type AccountType = Account["type"]
-
-const accountIcons: Record<AccountType, LucideIcon> = {
-  bank: Landmark,
-  cash: Wallet,
-  credit: CreditCard,
-  digital: Smartphone,
-}
+type AccountType = "bank" | "cash" | "credit" | "digital"
 
 const typeLabels: Record<AccountType, string> = {
   bank: "Banco",
@@ -54,6 +46,11 @@ function AccountTab({ accounts, upsertAccount, deleteAccount }: AccountTabProps)
   const [editing, setEditing] = useState<Account | null>(null)
   const [form, setForm] = useState<AccountForm>(emptyForm)
 
+  // Movimientos ya aplicados a la cuenta = balance derivado - saldo base.
+  const movements = editing ? editing.balance - (editing.initialBalance ?? editing.balance) : 0
+  // Balance disponible = saldo base (editable) + movimientos confirmados.
+  const availableBalance = (parseFloat(form.balance) || 0) + movements
+
   const openCreate = () => {
     setEditing(null)
     setForm(emptyForm)
@@ -64,34 +61,46 @@ function AccountTab({ accounts, upsertAccount, deleteAccount }: AccountTabProps)
     setEditing(account)
     setForm({
       name: account.name,
-      type: account.type,
-      balance: String(account.balance),
+      type: (account.type as AccountType) ?? "bank",
+      // Se edita el saldo inicial (base); el balance mostrado incluye movimientos.
+      balance: String(account.initialBalance ?? account.balance),
       currency: account.currency,
     })
     setOpen(true)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim() || form.balance === "") {
-      toast.error("Completa el nombre y el balance")
+      toast.error("Completa el nombre y el saldo inicial")
       return
     }
     const account: Account = {
-      id: editing?.id ?? newId(),
+      id: editing?.id ?? "",
       name: form.name.trim(),
       type: form.type,
       balance: parseFloat(form.balance),
       currency: form.currency.trim() || "USD",
-      icon: accountIcons[form.type],
+      icon: form.type,
+      color: editing?.color ?? "bg-primary",
     }
-    upsertAccount(account)
-    toast.success(editing ? "Cuenta actualizada" : "Cuenta creada")
-    setOpen(false)
+    try {
+      await upsertAccount(account)
+      toast.success(editing ? "Cuenta actualizada" : "Cuenta creada")
+      setOpen(false)
+    } catch (err) {
+      console.error(err)
+      toast.error("No se pudo guardar la cuenta")
+    }
   }
 
-  const handleDelete = (account: Account) => {
-    deleteAccount(account.id)
-    toast.success("Cuenta eliminada")
+  const handleDelete = async (account: Account) => {
+    try {
+      await deleteAccount(account.id)
+      toast.success("Cuenta eliminada")
+    } catch (err) {
+      console.error(err)
+      toast.error("No se pudo eliminar la cuenta")
+    }
   }
 
   return (
@@ -113,7 +122,7 @@ function AccountTab({ accounts, upsertAccount, deleteAccount }: AccountTabProps)
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {accounts.map((account) => {
-            const Icon = account.icon
+            const Icon = resolveAccountIcon(account.type)
             return (
               <Card key={account.id} className="group gap-0 border-border/60 py-0">
                 <CardContent className="p-4">
@@ -124,7 +133,7 @@ function AccountTab({ accounts, upsertAccount, deleteAccount }: AccountTabProps)
                       </div>
                       <div>
                         <CardTitle className="text-base">{account.name}</CardTitle>
-                        <CardDescription>{typeLabels[account.type]}</CardDescription>
+                        <CardDescription>{typeLabels[account.type as AccountType] ?? account.type}</CardDescription>
                       </div>
                     </div>
                     <div className="flex items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
@@ -143,7 +152,7 @@ function AccountTab({ accounts, upsertAccount, deleteAccount }: AccountTabProps)
                     </div>
                   </div>
                   <div className="mt-3">
-                    <p className="text-xs text-muted-foreground">Balance actual</p>
+                    <p className="text-xs text-muted-foreground">Balance disponible</p>
                     <p
                       className={`text-2xl font-bold ${account.balance >= 0 ? "text-success" : "text-destructive"}`}
                       style={{ fontVariantNumeric: "tabular-nums" }}
@@ -208,7 +217,7 @@ function AccountTab({ accounts, upsertAccount, deleteAccount }: AccountTabProps)
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="account-balance">Balance</Label>
+              <Label htmlFor="account-balance">Balance actual</Label>
               <Input
                 id="account-balance"
                 type="number"
@@ -218,7 +227,21 @@ function AccountTab({ accounts, upsertAccount, deleteAccount }: AccountTabProps)
                 onChange={(e) => setForm({ ...form, balance: e.target.value })}
                 autoComplete="off"
               />
-              <p className="text-xs text-muted-foreground">Usa valores negativos para deudas (ej. tarjetas de crédito).</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="account-available">Balance disponible</Label>
+              <Input
+                id="account-available"
+                type="text"
+                readOnly
+                tabIndex={-1}
+                value={`${availableBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${form.currency || "USD"}`}
+                className="bg-muted/40 text-muted-foreground"
+              />
+              <p className="text-xs text-muted-foreground">
+                Balance actual ajustado con tus movimientos confirmados.
+              </p>
             </div>
           </div>
 

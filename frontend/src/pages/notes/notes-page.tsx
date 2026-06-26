@@ -32,13 +32,15 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import * as notesService from '@/services/notes.service';
 
 // Types
 interface Note {
-  id: number;
+  id: string;
   title: string;
   content: string;
-  folderId: string;
+  folderId: string | null;
   createdAt: Date;
   updatedAt: Date;
   isPinned: boolean;
@@ -53,75 +55,77 @@ interface NoteFolder {
   isSystem?: boolean;
 }
 
+const toNote = (n: notesService.Note): Note => ({
+  id: n.id,
+  title: n.title,
+  content: n.content,
+  folderId: n.folderId,
+  createdAt: new Date(n.createdAt),
+  updatedAt: new Date(n.updatedAt),
+  isPinned: n.isPinned,
+});
+
+// Carpeta virtual "Todas" (no existe en la BD; agrupa todas las notas).
+const ALL_FOLDER: NoteFolder = {
+  id: 'all',
+  name: 'Todas',
+  color: 'text-yellow-500',
+  isExpanded: true,
+  isSystem: true,
+};
+
 const NotesPage = () => {
-  // Sample folders
-  const [folders, setFolders] = useState<NoteFolder[]>([
-    { id: 'all', name: 'Todas', color: 'text-yellow-500', isExpanded: true, isSystem: true },
-    { id: 'personal', name: 'Personal', color: 'text-orange-500', isExpanded: true },
-    { id: 'work', name: 'Trabajo', color: 'text-blue-500', isExpanded: true },
-    { id: 'ideas', name: 'Ideas', color: 'text-purple-500', isExpanded: true },
-  ]);
+  const [dbFolders, setDbFolders] = useState<NoteFolder[]>([]);
+  const folders: NoteFolder[] = [ALL_FOLDER, ...dbFolders];
 
-  // Sample notes
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: 1,
-      title: 'Lista de compras',
-      content: 'Leche\nPan\nHuevos\nFrutas\nVerduras\nCarne\nPollo',
-      folderId: 'personal',
-      createdAt: new Date(2026, 0, 26, 10, 30),
-      updatedAt: new Date(2026, 0, 26, 10, 30),
-      isPinned: true,
-    },
-    {
-      id: 2,
-      title: 'Reunión del proyecto',
-      content: 'Puntos a discutir:\n- Avance del sprint\n- Bloqueos actuales\n- Próximos pasos\n- Asignación de tareas',
-      folderId: 'work',
-      createdAt: new Date(2026, 0, 25, 14, 0),
-      updatedAt: new Date(2026, 0, 25, 16, 45),
-      isPinned: true,
-    },
-    {
-      id: 3,
-      title: 'Ideas para la app',
-      content: 'Funcionalidades nuevas:\n1. Modo oscuro automático\n2. Sincronización en la nube\n3. Compartir notas\n4. Etiquetas y filtros',
-      folderId: 'ideas',
-      createdAt: new Date(2026, 0, 24, 9, 15),
-      updatedAt: new Date(2026, 0, 25, 11, 20),
-      isPinned: false,
-    },
-    {
-      id: 4,
-      title: 'Receta de pasta',
-      content: 'Ingredientes:\n- 500g de pasta\n- Salsa de tomate\n- Queso parmesano\n- Albahaca fresca\n- Aceite de oliva\n\nPreparación:\n1. Hervir agua con sal\n2. Cocinar la pasta al dente\n3. Preparar la salsa',
-      folderId: 'personal',
-      createdAt: new Date(2026, 0, 23, 18, 0),
-      updatedAt: new Date(2026, 0, 23, 18, 30),
-      isPinned: false,
-    },
-    {
-      id: 5,
-      title: 'Objetivos del mes',
-      content: '✓ Completar curso de React\n○ Leer 2 libros\n○ Ejercicio 3 veces por semana\n○ Ahorrar 20% del salario',
-      folderId: 'personal',
-      createdAt: new Date(2026, 0, 1, 8, 0),
-      updatedAt: new Date(2026, 0, 20, 22, 15),
-      isPinned: false,
-    },
-  ]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [selectedFolderId, setSelectedFolderId] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [showFolderDialog, setShowFolderDialog] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
-  const [showNoteMenu, setShowNoteMenu] = useState<number | null>(null);
+  const [showNoteMenu, setShowNoteMenu] = useState<string | null>(null);
 
   const titleInputRef = useRef<HTMLTextAreaElement>(null);
   const contentInputRef = useRef<HTMLTextAreaElement>(null);
   const noteMenuRef = useRef<HTMLDivElement>(null);
+  // Temporizadores para guardar (debounce) cambios de cada nota.
+  const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  // Carga inicial desde Supabase.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [foldersData, notesData] = await Promise.all([
+          notesService.getFolders(),
+          notesService.getNotes(),
+        ]);
+        if (!active) return;
+        setDbFolders(
+          foldersData.map((f) => ({
+            id: f.id,
+            name: f.name,
+            color: f.color,
+            icon: f.icon,
+            isExpanded: true,
+          }))
+        );
+        setNotes(notesData.map(toNote));
+      } catch (err) {
+        console.error(err);
+        toast.error('No se pudieron cargar las notas');
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Get selected note
   const selectedNote = notes.find((n) => n.id === selectedNoteId) || null;
@@ -199,74 +203,106 @@ const NotesPage = () => {
   };
 
   // Create new note
-  const createNote = () => {
-    const newNote: Note = {
-      id: Date.now(),
-      title: '',
-      content: '',
-      folderId: selectedFolderId === 'all' ? 'personal' : selectedFolderId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      isPinned: false,
-    };
-    setNotes([newNote, ...notes]);
-    setSelectedNoteId(newNote.id);
-    setTimeout(() => titleInputRef.current?.focus(), 100);
+  const createNote = async () => {
+    try {
+      const created = await notesService.createNote({
+        title: '',
+        content: '',
+        folderId: selectedFolderId === 'all' ? null : selectedFolderId,
+      });
+      const note = toNote(created);
+      setNotes((prev) => [note, ...prev]);
+      setSelectedNoteId(note.id);
+      setTimeout(() => titleInputRef.current?.focus(), 100);
+    } catch (err) {
+      console.error(err);
+      toast.error('No se pudo crear la nota');
+    }
   };
 
-  // Update note
-  const updateNote = (noteId: number, updates: Partial<Note>) => {
-    setNotes(
-      notes.map((n) =>
+  // Update note (optimista + guardado diferido)
+  const updateNote = (noteId: string, updates: Partial<Note>) => {
+    setNotes((prev) =>
+      prev.map((n) =>
         n.id === noteId ? { ...n, ...updates, updatedAt: new Date() } : n
       )
     );
+    if (saveTimers.current[noteId]) clearTimeout(saveTimers.current[noteId]);
+    saveTimers.current[noteId] = setTimeout(() => {
+      notesService
+        .updateNote(noteId, {
+          title: updates.title,
+          content: updates.content,
+          folderId: updates.folderId,
+          isPinned: updates.isPinned,
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error('No se pudo guardar la nota');
+        });
+    }, 600);
   };
 
   // Delete note
-  const deleteNote = (noteId: number) => {
-    setNotes(notes.filter((n) => n.id !== noteId));
-    if (selectedNoteId === noteId) {
-      setSelectedNoteId(null);
-    }
+  const deleteNote = async (noteId: string) => {
+    const prev = notes;
+    setNotes((curr) => curr.filter((n) => n.id !== noteId));
+    if (selectedNoteId === noteId) setSelectedNoteId(null);
     setShowNoteMenu(null);
+    try {
+      await notesService.deleteNote(noteId);
+    } catch (err) {
+      console.error(err);
+      toast.error('No se pudo eliminar la nota');
+      setNotes(prev);
+    }
   };
 
   // Toggle pin
-  const togglePin = (noteId: number) => {
-    setNotes(
-      notes.map((n) =>
-        n.id === noteId ? { ...n, isPinned: !n.isPinned } : n
-      )
+  const togglePin = async (noteId: string) => {
+    const note = notes.find((n) => n.id === noteId);
+    if (!note) return;
+    const next = !note.isPinned;
+    setNotes((prev) =>
+      prev.map((n) => (n.id === noteId ? { ...n, isPinned: next } : n))
     );
     setShowNoteMenu(null);
+    try {
+      await notesService.updateNote(noteId, { isPinned: next });
+    } catch (err) {
+      console.error(err);
+      toast.error('No se pudo actualizar la nota');
+      setNotes((prev) =>
+        prev.map((n) => (n.id === noteId ? { ...n, isPinned: !next } : n))
+      );
+    }
   };
 
   // Create folder
-  const createFolder = () => {
-    if (newFolderName.trim()) {
-      const colors = [
-        'text-red-500',
-        'text-orange-500',
-        'text-yellow-500',
-        'text-green-500',
-        'text-blue-500',
-        'text-purple-500',
-        'text-pink-500',
-      ];
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-
-      setFolders([
-        ...folders,
-        {
-          id: newFolderName.toLowerCase().replace(/\s+/g, '_'),
-          name: newFolderName.trim(),
-          color: randomColor,
-          isExpanded: true,
-        },
+  const createFolder = async () => {
+    const name = newFolderName.trim();
+    if (!name) return;
+    const colors = [
+      'text-red-500',
+      'text-orange-500',
+      'text-yellow-500',
+      'text-green-500',
+      'text-blue-500',
+      'text-purple-500',
+      'text-pink-500',
+    ];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    try {
+      const created = await notesService.createFolder({ name, color: randomColor });
+      setDbFolders((prev) => [
+        ...prev,
+        { id: created.id, name: created.name, color: created.color, isExpanded: true },
       ]);
       setNewFolderName('');
       setShowFolderDialog(false);
+    } catch (err) {
+      console.error(err);
+      toast.error('No se pudo crear la carpeta');
     }
   };
 
@@ -510,8 +546,15 @@ const NotesPage = () => {
             </div>
           )}
 
+          {/* Loading state */}
+          {loading && (
+            <div className="flex flex-col items-center justify-center h-64 text-center">
+              <p className="text-muted-foreground text-sm">Cargando notas...</p>
+            </div>
+          )}
+
           {/* Empty state */}
-          {filteredNotes.length === 0 && (
+          {!loading && filteredNotes.length === 0 && (
             <div className="flex flex-col items-center justify-center h-64 text-center">
               <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
                 <Edit3 className="w-8 h-8 text-muted-foreground" />

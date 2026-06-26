@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo_dailybalance.png";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
+import { useAuth } from "@/lib/auth";
 import {
     LayoutDashboard,
     Calendar,
@@ -68,6 +69,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
     const navigate = useNavigate();
     const location = useLocation();
     const { isSmallScreen } = useBreakpoint();
+    const { user, signOut } = useAuth();
 
     // Auto-close sidebar on navigation (mobile/tablet)
     useEffect(() => {
@@ -81,9 +83,17 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
         return () => { document.body.style.overflow = ""; };
     }, [isOpen, isSmallScreen]);
 
-    const handleLogout = () => {
-        navigate("/login");
+    const handleLogout = async () => {
+        await signOut();
+        navigate("/login", { replace: true });
     };
+
+    const displayEmail = user?.email ?? "m@example.com";
+    const displayName =
+        (user?.user_metadata?.full_name as string | undefined) ??
+        displayEmail.split("@")[0] ??
+        "Usuario";
+    const avatarLetter = displayName.charAt(0).toUpperCase() || "U";
 
     return (
         <>
@@ -199,14 +209,14 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <div className="border-t border-sidebar-border p-3">
                     <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors cursor-pointer">
                         <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm shrink-0">
-                            U
+                            {avatarLetter}
                         </div>
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-sidebar-foreground truncate">
-                                Usuario
+                                {displayName}
                             </p>
                             <p className="text-xs text-sidebar-foreground/50 truncate">
-                                m@example.com
+                                {displayEmail}
                             </p>
                         </div>
                         <button

@@ -9,13 +9,13 @@ import {
 
 // Types
 interface Step {
-  id: number;
+  id: string;
   text: string;
   completed: boolean;
 }
 
 interface Task {
-  id: number;
+  id: string;
   title: string;
   description: string;
   dueDate: string;
@@ -36,8 +36,8 @@ interface CompletedTasksListProps {
   showCompleted: boolean;
   setShowCompleted: (show: boolean) => void;
   handleSelectTask: (task: Task) => void;
-  toggleTaskComplete: (taskId: number) => void;
-  toggleTaskImportance: (taskId: number) => void;
+  toggleTaskComplete: (taskId: string) => void;
+  toggleTaskImportance: (taskId: string) => void;
 }
 
 // Importance Icon Component

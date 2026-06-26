@@ -1,51 +1,21 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { StatCard } from "@/components/ui/StatCard"
 import { ArrowLeftRight, Wallet, PiggyBank, Tag, DollarSign, TrendingUp, TrendingDown } from "lucide-react"
-import type { LucideIcon } from "lucide-react"
 import MovimentTab from "./moviment-tab"
 import AccountTab from "./account-tab"
 import BudgetTab from "./budget-tab"
 import CategoryTab from "./category-tab"
 import { formatCurrency } from "./finance-utils"
 
-// Types
-export interface Transaction {
-  id: string
-  type: "income" | "expense" | "transfer"
-  amount: number
-  category: string
-  subcategory?: string
-  paymentMethod: string
-  date: string
-  description: string
-  status: "confirmed" | "pending"
-  account: string
-}
-
-export interface Category {
-  id: string
-  name: string
-  icon: LucideIcon
-  color: string
-  subcategories: string[]
-}
-
-export interface Account {
-  id: string
-  name: string
-  type: "cash" | "bank" | "credit" | "digital"
-  balance: number
-  currency: string
-  icon: LucideIcon
-}
-
-export interface Budget {
-  id: string
-  category: string
-  limit: number
-  spent: number
-  month: string
-}
+// Tipos unificados con la capa de servicio (Supabase).
+export type {
+  Transaction,
+  Category,
+  Subcategory,
+  Account,
+  Budget,
+} from "@/services/finance.service"
+import type { Account, Category, Transaction, Budget } from "@/services/finance.service"
 
 export interface FinanceTotals {
   totalBalance: number
@@ -60,14 +30,14 @@ interface CurrencyTabProps {
   transactions: Transaction[]
   budgets: Budget[]
   totals: FinanceTotals
-  upsertTransaction: (transaction: Transaction) => void
-  deleteTransaction: (id: string) => void
-  upsertAccount: (account: Account) => void
-  deleteAccount: (id: string) => void
-  upsertBudget: (budget: Budget) => void
-  deleteBudget: (id: string) => void
-  upsertCategory: (category: Category) => void
-  deleteCategory: (id: string) => void
+  upsertTransaction: (transaction: Transaction) => Promise<void>
+  deleteTransaction: (id: string) => Promise<void>
+  upsertAccount: (account: Account) => Promise<void>
+  deleteAccount: (id: string) => Promise<void>
+  upsertBudget: (budget: Budget) => Promise<void>
+  deleteBudget: (id: string) => Promise<void>
+  upsertCategory: (category: Category) => Promise<void>
+  deleteCategory: (id: string) => Promise<void>
   getBudgetPercentage: (budget: Budget) => number
   getBudgetStatus: (budget: Budget) => "exceeded" | "warning" | "safe"
 }

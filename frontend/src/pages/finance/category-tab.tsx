@@ -33,13 +33,15 @@ import {
 import type { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { Category } from "./currency-tab"
-import { newId } from "./finance-utils"
+
+type CategoryType = "income" | "expense" | "both"
 
 interface CategoryTabProps {
   categories: Category[]
-  upsertCategory: (category: Category) => void
-  deleteCategory: (id: string) => void
+  upsertCategory: (category: Category) => Promise<void>
+  deleteCategory: (id: string) => Promise<void>
 }
 
 const iconOptions: { key: string; icon: LucideIcon }[] = [
@@ -70,9 +72,6 @@ const colorOptions = [
   "bg-green-500",
 ]
 
-const findIconKey = (icon: LucideIcon) =>
-  iconOptions.find((o) => o.icon === icon)?.key ?? "tag"
-
 const resolveIcon = (key: string) =>
   iconOptions.find((o) => o.key === key)?.icon ?? Tag
 
@@ -80,6 +79,7 @@ interface CategoryForm {
   name: string
   iconKey: string
   color: string
+  type: CategoryType
   subcategories: string
 }
 
@@ -87,6 +87,7 @@ const emptyForm: CategoryForm = {
   name: "",
   iconKey: "tag",
   color: "bg-blue-500",
+  type: "expense",
   subcategories: "",
 }
 
@@ -105,36 +106,50 @@ function CategoryTab({ categories, upsertCategory, deleteCategory }: CategoryTab
     setEditing(category)
     setForm({
       name: category.name,
-      iconKey: findIconKey(category.icon),
+      iconKey: category.icon || "tag",
       color: category.color,
-      subcategories: category.subcategories.join(", "),
+      type: category.type,
+      subcategories: category.subcategories.map((s) => s.name).join(", "),
     })
     setOpen(true)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim()) {
       toast.error("Ingresa un nombre para la categoría")
       return
     }
+    const id = editing?.id ?? ""
     const category: Category = {
-      id: editing?.id ?? newId(),
+      id,
       name: form.name.trim(),
-      icon: resolveIcon(form.iconKey),
+      icon: form.iconKey,
       color: form.color,
+      type: form.type,
       subcategories: form.subcategories
         .split(",")
         .map((s) => s.trim())
-        .filter(Boolean),
+        .filter(Boolean)
+        .map((name) => ({ id: "", categoryId: id, name })),
     }
-    upsertCategory(category)
-    toast.success(editing ? "Categoría actualizada" : "Categoría creada")
-    setOpen(false)
+    try {
+      await upsertCategory(category)
+      toast.success(editing ? "Categoría actualizada" : "Categoría creada")
+      setOpen(false)
+    } catch (err) {
+      console.error(err)
+      toast.error("No se pudo guardar la categoría")
+    }
   }
 
-  const handleDelete = (category: Category) => {
-    deleteCategory(category.id)
-    toast.success("Categoría eliminada")
+  const handleDelete = async (category: Category) => {
+    try {
+      await deleteCategory(category.id)
+      toast.success("Categoría eliminada")
+    } catch (err) {
+      console.error(err)
+      toast.error("No se pudo eliminar la categoría")
+    }
   }
 
   return (
@@ -156,7 +171,7 @@ function CategoryTab({ categories, upsertCategory, deleteCategory }: CategoryTab
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {categories.map((category) => {
-            const Icon = category.icon
+            const Icon = resolveIcon(category.icon)
             return (
               <Card key={category.id} className="group gap-0 border-border/60 py-0">
                 <CardContent className="p-4">
@@ -189,8 +204,8 @@ function CategoryTab({ categories, upsertCategory, deleteCategory }: CategoryTab
                         <p className="text-xs text-muted-foreground">Sin subcategorías</p>
                       ) : (
                         category.subcategories.map((sub, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-[10px]">
-                            {sub}
+                          <Badge key={sub.id || idx} variant="secondary" className="text-[10px]">
+                            {sub.name}
                           </Badge>
                         ))
                       )}
@@ -221,6 +236,20 @@ function CategoryTab({ categories, upsertCategory, deleteCategory }: CategoryTab
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 autoComplete="off"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category-type">Tipo</Label>
+              <Select value={form.type} onValueChange={(value) => setForm({ ...form, type: value as CategoryType })}>
+                <SelectTrigger id="category-type" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="expense">Gasto</SelectItem>
+                  <SelectItem value="income">Ingreso</SelectItem>
+                  <SelectItem value="both">Ambos</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

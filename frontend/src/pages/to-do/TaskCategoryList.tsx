@@ -12,13 +12,13 @@ import {
 
 // Types
 interface Step {
-  id: number;
+  id: string;
   text: string;
   completed: boolean;
 }
 
 interface Task {
-  id: number;
+  id: string;
   title: string;
   description: string;
   dueDate: string;
@@ -53,8 +53,8 @@ interface TaskCategoryListProps {
   getTasksByCategory: (category: string) => Task[];
   toggleCategory: (category: string) => void;
   handleSelectTask: (task: Task) => void;
-  toggleTaskComplete: (taskId: number) => void;
-  toggleTaskImportance: (taskId: number) => void;
+  toggleTaskComplete: (taskId: string) => void;
+  toggleTaskImportance: (taskId: string) => void;
   getTaskDateLabelForList: (dueDate: string) => string;
   getTaskReminderLabelForList: (task: Task) => string;
 }

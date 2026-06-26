@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 
 // Layout
 import AppLayout from "@/components/layout/AppLayout";
+import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 
 // Pages
 import LoginPage from "@/pages/auth/LoginPage";
@@ -26,9 +27,11 @@ export function AppRoutes() {
             <Route 
                 path="/files"
                 element={
-                    <AppLayout title="Archivos" subtitle="Documentos y archivos">
-                        <ArchivesPage />
-                    </AppLayout>
+                    <ProtectedRoute>
+                        <AppLayout title="Archivos" subtitle="Documentos y archivos">
+                            <ArchivesPage />
+                        </AppLayout>
+                    </ProtectedRoute>
                 }
             />
             
@@ -36,9 +39,11 @@ export function AppRoutes() {
             <Route 
                 path="/dashboard" 
                 element={
-                    <AppLayout title="Dashboard" subtitle="Vista general de tu día">
-                        <DashboardPage />
-                    </AppLayout>
+                    <ProtectedRoute>
+                        <AppLayout title="Dashboard" subtitle="Vista general de tu día">
+                            <DashboardPage />
+                        </AppLayout>
+                    </ProtectedRoute>
                 } 
             />
             
@@ -46,9 +51,11 @@ export function AppRoutes() {
             <Route 
                 path="/daily" 
                 element={
-                    <AppLayout title="Mi Día" subtitle="Gestiona tus actividades diarias">
-                        <DailyPage />
-                    </AppLayout>
+                    <ProtectedRoute>
+                        <AppLayout title="Mi Día" subtitle="Gestiona tus actividades diarias">
+                            <DailyPage />
+                        </AppLayout>
+                    </ProtectedRoute>
                 } 
             />
             
@@ -56,9 +63,11 @@ export function AppRoutes() {
             <Route 
                 path="/currency" 
                 element={
-                    <AppLayout title="Finanzas" subtitle="Control de gastos e ingresos">
-                        <CurrencyPage />
-                    </AppLayout>
+                    <ProtectedRoute>
+                        <AppLayout title="Finanzas" subtitle="Control de gastos e ingresos">
+                            <CurrencyPage />
+                        </AppLayout>
+                    </ProtectedRoute>
                 } 
             />
 
@@ -66,9 +75,11 @@ export function AppRoutes() {
             <Route 
                 path="/reports" 
                 element={
-                    <AppLayout title="Reportes" subtitle="Análisis y estadísticas">
-                        <ReportPage />
-                    </AppLayout>
+                    <ProtectedRoute>
+                        <AppLayout title="Reportes" subtitle="Análisis y estadísticas">
+                            <ReportPage />
+                        </AppLayout>
+                    </ProtectedRoute>
                 } 
             />
             
@@ -76,26 +87,32 @@ export function AppRoutes() {
             <Route 
                 path="/notes" 
                 element={
-                    <AppLayout title="Notas" subtitle="Notas y pendientes">
-                        <NotePage />
-                    </AppLayout>
+                    <ProtectedRoute>
+                        <AppLayout title="Notas" subtitle="Notas y pendientes">
+                            <NotePage />
+                        </AppLayout>
+                    </ProtectedRoute>
                 } 
             />
             {/* User */}
             <Route 
                 path="/profile" 
                 element={
-                    <AppLayout title="Mi Perfil" subtitle="Información personal">
-                        <UserProfilePage />
-                    </AppLayout>
+                    <ProtectedRoute>
+                        <AppLayout title="Mi Perfil" subtitle="Información personal">
+                            <UserProfilePage />
+                        </AppLayout>
+                    </ProtectedRoute>
                 } 
             />
             <Route 
                 path="/settings" 
                 element={
-                    <AppLayout title="Configuración" subtitle="Preferencias de la aplicación">
-                        <SettingsPage />
-                    </AppLayout>
+                    <ProtectedRoute>
+                        <AppLayout title="Configuración" subtitle="Preferencias de la aplicación">
+                            <SettingsPage />
+                        </AppLayout>
+                    </ProtectedRoute>
                 } 
             />
 

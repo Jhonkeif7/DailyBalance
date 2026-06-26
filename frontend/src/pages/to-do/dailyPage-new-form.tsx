@@ -20,7 +20,7 @@ interface NewTaskData {
   dueDate: string;
   importance: 'normal' | 'medium' | 'high';
   category: string;
-  steps: { id: number; text: string; completed: boolean }[];
+  steps: { id: string; text: string; completed: boolean }[];
 }
 
 interface NewTaskDialogProps {

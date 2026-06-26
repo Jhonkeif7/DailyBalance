@@ -17,27 +17,26 @@ import {
 import { DollarSign, Bell, Check, Plus, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import type { Category, Budget } from "./currency-tab"
-import { formatNumber, newId } from "./finance-utils"
+import { formatNumber, resolveCategoryIcon } from "./finance-utils"
 
 interface BudgetTabProps {
   categories: Category[]
   budgets: Budget[]
-  upsertBudget: (budget: Budget) => void
-  deleteBudget: (id: string) => void
+  upsertBudget: (budget: Budget) => Promise<void>
+  deleteBudget: (id: string) => Promise<void>
   getBudgetPercentage: (budget: Budget) => number
   getBudgetStatus: (budget: Budget) => "exceeded" | "warning" | "safe"
 }
 
 interface BudgetForm {
-  category: string
-  limit: string
-  spent: string
-  month: string
+  categoryId: string
+  amount: string
+  period: string
 }
 
 const currentMonth = () => new Date().toISOString().slice(0, 7)
 
-const emptyForm: BudgetForm = { category: "", limit: "", spent: "0", month: currentMonth() }
+const emptyForm: BudgetForm = { categoryId: "", amount: "", period: currentMonth() }
 
 function BudgetTab({
   categories,
@@ -53,41 +52,52 @@ function BudgetTab({
 
   const openCreate = () => {
     setEditing(null)
-    setForm({ ...emptyForm, month: currentMonth() })
+    setForm({ ...emptyForm, period: currentMonth() })
     setOpen(true)
   }
 
   const openEdit = (budget: Budget) => {
     setEditing(budget)
     setForm({
-      category: budget.category,
-      limit: String(budget.limit),
-      spent: String(budget.spent),
-      month: budget.month,
+      categoryId: budget.categoryId ?? "",
+      amount: String(budget.amount),
+      period: budget.period,
     })
     setOpen(true)
   }
 
-  const handleSave = () => {
-    if (!form.category || !form.limit) {
+  const handleSave = async () => {
+    if (!form.categoryId || !form.amount) {
       toast.error("Selecciona una categoría y un límite")
       return
     }
+    const categoryName = categories.find((c) => c.id === form.categoryId)?.name ?? "Presupuesto"
     const budget: Budget = {
-      id: editing?.id ?? newId(),
-      category: form.category,
-      limit: parseFloat(form.limit),
-      spent: parseFloat(form.spent || "0"),
-      month: form.month,
+      id: editing?.id ?? "",
+      name: categoryName,
+      categoryId: form.categoryId,
+      amount: parseFloat(form.amount),
+      period: form.period,
+      spent: editing?.spent ?? 0,
     }
-    upsertBudget(budget)
-    toast.success(editing ? "Presupuesto actualizado" : "Presupuesto creado")
-    setOpen(false)
+    try {
+      await upsertBudget(budget)
+      toast.success(editing ? "Presupuesto actualizado" : "Presupuesto creado")
+      setOpen(false)
+    } catch (err) {
+      console.error(err)
+      toast.error("No se pudo guardar el presupuesto")
+    }
   }
 
-  const handleDelete = (budget: Budget) => {
-    deleteBudget(budget.id)
-    toast.success("Presupuesto eliminado")
+  const handleDelete = async (budget: Budget) => {
+    try {
+      await deleteBudget(budget.id)
+      toast.success("Presupuesto eliminado")
+    } catch (err) {
+      console.error(err)
+      toast.error("No se pudo eliminar el presupuesto")
+    }
   }
 
   return (
@@ -115,8 +125,9 @@ function BudgetTab({
               {budgets.map((budget) => {
                 const percentage = getBudgetPercentage(budget)
                 const status = getBudgetStatus(budget)
-                const category = categories.find((c) => c.name === budget.category)
-                const Icon = category?.icon || DollarSign
+                const category = categories.find((c) => c.id === budget.categoryId)
+                const Icon = category ? resolveCategoryIcon(category.icon) : DollarSign
+                const budgetName = category?.name ?? budget.name
 
                 return (
                   <div key={budget.id} className="group space-y-2.5">
@@ -126,9 +137,9 @@ function BudgetTab({
                           <Icon className="h-4 w-4 text-white" aria-hidden="true" />
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">{budget.category}</p>
+                          <p className="truncate text-sm font-medium">{budgetName}</p>
                           <p className="text-xs text-muted-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
-                            ${formatNumber(budget.spent)} de ${formatNumber(budget.limit)}
+                            ${formatNumber(budget.spent)} de ${formatNumber(budget.amount)}
                           </p>
                         </div>
                       </div>
@@ -152,7 +163,7 @@ function BudgetTab({
                           </Badge>
                         )}
                         <div className="flex items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                          <Button variant="ghost" size="icon-sm" onClick={() => openEdit(budget)} aria-label={`Editar presupuesto ${budget.category}`}>
+                          <Button variant="ghost" size="icon-sm" onClick={() => openEdit(budget)} aria-label={`Editar presupuesto ${budgetName}`}>
                             <Pencil className="h-4 w-4" aria-hidden="true" />
                           </Button>
                           <Button
@@ -160,7 +171,7 @@ function BudgetTab({
                             size="icon-sm"
                             onClick={() => handleDelete(budget)}
                             className="text-muted-foreground hover:text-destructive"
-                            aria-label={`Eliminar presupuesto ${budget.category}`}
+                            aria-label={`Eliminar presupuesto ${budgetName}`}
                           >
                             <Trash2 className="h-4 w-4" aria-hidden="true" />
                           </Button>
@@ -176,7 +187,7 @@ function BudgetTab({
                             ? "[&>div]:bg-amber-500"
                             : "[&>div]:bg-success"
                       }`}
-                      aria-label={`Presupuesto ${budget.category}: ${Math.round(percentage)}% utilizado`}
+                      aria-label={`Presupuesto ${budgetName}: ${Math.round(percentage)}% utilizado`}
                     />
                   </div>
                 )
@@ -197,13 +208,13 @@ function BudgetTab({
           <div className="grid gap-4 py-2">
             <div className="space-y-2">
               <Label htmlFor="budget-category">Categoría</Label>
-              <Select value={form.category} onValueChange={(value) => setForm({ ...form, category: value })}>
+              <Select value={form.categoryId} onValueChange={(value) => setForm({ ...form, categoryId: value })}>
                 <SelectTrigger id="budget-category" className="w-full">
                   <SelectValue placeholder="Seleccionar…" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.name}>
+                    <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
                     </SelectItem>
                   ))}
@@ -219,34 +230,24 @@ function BudgetTab({
                   type="number"
                   inputMode="decimal"
                   placeholder="0.00"
-                  value={form.limit}
-                  onChange={(e) => setForm({ ...form, limit: e.target.value })}
+                  value={form.amount}
+                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
                   autoComplete="off"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="budget-spent">Gastado</Label>
+                <Label htmlFor="budget-month">Periodo</Label>
                 <Input
-                  id="budget-spent"
-                  type="number"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  value={form.spent}
-                  onChange={(e) => setForm({ ...form, spent: e.target.value })}
-                  autoComplete="off"
+                  id="budget-month"
+                  type="month"
+                  value={form.period}
+                  onChange={(e) => setForm({ ...form, period: e.target.value })}
                 />
               </div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="budget-month">Mes</Label>
-              <Input
-                id="budget-month"
-                type="month"
-                value={form.month}
-                onChange={(e) => setForm({ ...form, month: e.target.value })}
-              />
-            </div>
+            <p className="text-xs text-muted-foreground">
+              El gasto se calcula automáticamente a partir de tus movimientos.
+            </p>
           </div>
 
           <DialogFooter>

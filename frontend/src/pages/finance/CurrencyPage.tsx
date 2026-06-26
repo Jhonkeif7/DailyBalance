@@ -1,106 +1,173 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { PageContainer } from "@/components/ui/PageContainer"
-import {
-    CreditCard,
-    Smartphone,
-    ShoppingCart,
-    Car,
-    Utensils,
-    Home,
-    Heart,
-    Gamepad2,
-    Zap,
-    Wallet,
-} from "lucide-react"
+import { toast } from "sonner"
 import CurrencyTab from "./currency-tab"
 import type { Transaction, Category, Account, Budget } from "./currency-tab"
-
-// Mock Data
-const initialCategories: Category[] = [
-    { id: "1", name: "Alimentación", icon: Utensils, color: "bg-orange-500", subcategories: ["Supermercado", "Restaurantes", "Delivery"] },
-    { id: "2", name: "Transporte", icon: Car, color: "bg-blue-500", subcategories: ["Gasolina", "Uber", "Transporte público"] },
-    { id: "3", name: "Hogar", icon: Home, color: "bg-purple-500", subcategories: ["Alquiler", "Servicios", "Mantenimiento"] },
-    { id: "4", name: "Salud", icon: Heart, color: "bg-red-500", subcategories: ["Médico", "Farmacia", "Gym"] },
-    { id: "5", name: "Ocio", icon: Gamepad2, color: "bg-pink-500", subcategories: ["Netflix", "Spotify", "Juegos"] },
-    { id: "6", name: "Servicios", icon: Zap, color: "bg-yellow-500", subcategories: ["Luz", "Agua", "Internet"] },
-    { id: "7", name: "Compras", icon: ShoppingCart, color: "bg-emerald-500", subcategories: ["Ropa", "Electrónica", "Otros"] },
-]
-
-const initialAccounts: Account[] = [
-    { id: "1", name: "Banco Principal", type: "bank", balance: 8450.00, currency: "USD", icon: CreditCard },
-    { id: "2", name: "Efectivo", type: "cash", balance: 350.00, currency: "USD", icon: Wallet },
-    { id: "3", name: "Tarjeta Crédito", type: "credit", balance: -1250.00, currency: "USD", icon: CreditCard },
-    { id: "4", name: "PayPal", type: "digital", balance: 520.00, currency: "USD", icon: Smartphone },
-]
-
-const initialTransactions: Transaction[] = [
-    { id: "1", type: "income", amount: 3500, category: "Trabajo", paymentMethod: "transfer", date: "2026-01-24", description: "Salario mensual", status: "confirmed", account: "1" },
-    { id: "2", type: "expense", amount: 125.50, category: "Alimentación", paymentMethod: "card", date: "2026-01-24", description: "Supermercado semanal", status: "confirmed", account: "3" },
-    { id: "3", type: "expense", amount: 15.99, category: "Ocio", paymentMethod: "card", date: "2026-01-23", description: "Netflix mensual", status: "confirmed", account: "1" },
-    { id: "4", type: "expense", amount: 45.00, category: "Transporte", paymentMethod: "cash", date: "2026-01-22", description: "Gasolina", status: "confirmed", account: "2" },
-    { id: "5", type: "income", amount: 800, category: "Trabajo", paymentMethod: "transfer", date: "2026-01-21", description: "Freelance proyecto web", status: "confirmed", account: "1" },
-    { id: "6", type: "expense", amount: 65.00, category: "Alimentación", paymentMethod: "card", date: "2026-01-20", description: "Cena restaurante", status: "pending", account: "3" },
-    { id: "7", type: "expense", amount: 85.00, category: "Servicios", paymentMethod: "transfer", date: "2026-01-19", description: "Factura de luz", status: "confirmed", account: "1" },
-    { id: "8", type: "expense", amount: 40.00, category: "Salud", paymentMethod: "card", date: "2026-01-18", description: "Gym mensualidad", status: "confirmed", account: "1" },
-]
-
-const initialBudgets: Budget[] = [
-    { id: "1", category: "Alimentación", limit: 500, spent: 320, month: "2026-01" },
-    { id: "2", category: "Transporte", limit: 200, spent: 145, month: "2026-01" },
-    { id: "3", category: "Ocio", limit: 150, spent: 89, month: "2026-01" },
-    { id: "4", category: "Servicios", limit: 300, spent: 285, month: "2026-01" },
-    { id: "5", category: "Salud", limit: 100, spent: 40, month: "2026-01" },
-]
+import * as financeService from "@/services/finance.service"
 
 function CurrencyPage() {
-    const [accounts, setAccounts] = useState<Account[]>(initialAccounts)
-    const [categories, setCategories] = useState<Category[]>(initialCategories)
-    const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions)
-    const [budgets, setBudgets] = useState<Budget[]>(initialBudgets)
+    const [accounts, setAccounts] = useState<Account[]>([])
+    const [categories, setCategories] = useState<Category[]>([])
+    const [transactions, setTransactions] = useState<Transaction[]>([])
+    const [budgets, setBudgets] = useState<Budget[]>([])
+    const [, setLoading] = useState(true)
+
+    // Carga inicial desde Supabase.
+    useEffect(() => {
+        let active = true
+        ;(async () => {
+            try {
+                const [acc, cats, txs, buds] = await Promise.all([
+                    financeService.getAccounts(),
+                    financeService.getCategories(),
+                    financeService.getTransactions(),
+                    financeService.getBudgets(),
+                ])
+                if (!active) return
+                setAccounts(acc)
+                setCategories(cats)
+                setTransactions(txs)
+                setBudgets(buds)
+            } catch (err) {
+                console.error(err)
+                toast.error("No se pudieron cargar los datos de finanzas")
+            } finally {
+                if (active) setLoading(false)
+            }
+        })()
+        return () => {
+            active = false
+        }
+    }, [])
+
+    const reloadBudgets = async () => {
+        try {
+            setBudgets(await financeService.getBudgets())
+        } catch (err) {
+            console.error(err)
+        }
+    }
 
     // ===== Transactions CRUD =====
-    const upsertTransaction = (tx: Transaction) =>
+    const upsertTransaction = async (tx: Transaction) => {
+        const saved = await financeService.upsertTransaction({
+            id: tx.id || undefined,
+            type: tx.type,
+            amount: tx.amount,
+            categoryId: tx.categoryId,
+            subcategoryId: tx.subcategoryId,
+            paymentMethod: tx.paymentMethod,
+            date: tx.date,
+            description: tx.description,
+            status: tx.status,
+            accountId: tx.accountId,
+            transferAccountId: tx.transferAccountId,
+        })
         setTransactions((prev) =>
-            prev.some((t) => t.id === tx.id)
-                ? prev.map((t) => (t.id === tx.id ? tx : t))
-                : [tx, ...prev]
+            prev.some((t) => t.id === saved.id)
+                ? prev.map((t) => (t.id === saved.id ? saved : t))
+                : [saved, ...prev]
         )
-    const deleteTransaction = (id: string) =>
+        // El gasto de presupuestos depende de los movimientos.
+        void reloadBudgets()
+    }
+    const deleteTransaction = async (id: string) => {
+        await financeService.deleteTransaction(id)
         setTransactions((prev) => prev.filter((t) => t.id !== id))
+        void reloadBudgets()
+    }
 
     // ===== Accounts CRUD =====
-    const upsertAccount = (account: Account) =>
+    // El saldo que el usuario edita es el "saldo inicial" (base). El balance
+    // mostrado se deriva sumando los movimientos (ver accountsView).
+    const upsertAccount = async (account: Account) => {
+        const saved = await financeService.upsertAccount({
+            id: account.id || undefined,
+            name: account.name,
+            type: account.type,
+            balance: account.balance,
+            initialBalance: account.balance,
+            currency: account.currency,
+            icon: account.icon,
+            color: account.color,
+        })
         setAccounts((prev) =>
-            prev.some((a) => a.id === account.id)
-                ? prev.map((a) => (a.id === account.id ? account : a))
-                : [...prev, account]
+            prev.some((a) => a.id === saved.id)
+                ? prev.map((a) => (a.id === saved.id ? saved : a))
+                : [...prev, saved]
         )
-    const deleteAccount = (id: string) =>
+    }
+    const deleteAccount = async (id: string) => {
+        await financeService.deleteAccount(id)
         setAccounts((prev) => prev.filter((a) => a.id !== id))
+    }
 
-    // ===== Budgets CRUD =====
-    const upsertBudget = (budget: Budget) =>
-        setBudgets((prev) =>
-            prev.some((b) => b.id === budget.id)
-                ? prev.map((b) => (b.id === budget.id ? budget : b))
-                : [...prev, budget]
-        )
-    const deleteBudget = (id: string) =>
+    // ===== Budgets CRUD ("spent" lo calcula la vista v_budget_usage) =====
+    const upsertBudget = async (budget: Budget) => {
+        await financeService.upsertBudget({
+            id: budget.id || undefined,
+            name: budget.name,
+            categoryId: budget.categoryId,
+            amount: budget.amount,
+            period: budget.period,
+        })
+        await reloadBudgets()
+    }
+    const deleteBudget = async (id: string) => {
+        await financeService.deleteBudget(id)
         setBudgets((prev) => prev.filter((b) => b.id !== id))
+    }
 
-    // ===== Categories CRUD =====
-    const upsertCategory = (category: Category) =>
-        setCategories((prev) =>
-            prev.some((c) => c.id === category.id)
-                ? prev.map((c) => (c.id === category.id ? category : c))
-                : [...prev, category]
-        )
-    const deleteCategory = (id: string) =>
+    // ===== Categories CRUD (reconcilia subcategorías) =====
+    const upsertCategory = async (category: Category) => {
+        const saved = await financeService.upsertCategory({
+            id: category.id || undefined,
+            name: category.name,
+            icon: category.icon,
+            color: category.color,
+            type: category.type,
+        })
+        const existing = categories.find((c) => c.id === saved.id)?.subcategories ?? []
+        const desiredNames = category.subcategories.map((s) => s.name.trim()).filter(Boolean)
+        const existingNames = existing.map((s) => s.name)
+        const toAdd = desiredNames.filter((n) => !existingNames.includes(n))
+        const toDelete = existing.filter((s) => !desiredNames.includes(s.name))
+        await Promise.all([
+            ...toAdd.map((n) => financeService.addSubcategory(saved.id, n)),
+            ...toDelete.map((s) => financeService.deleteSubcategory(s.id)),
+        ])
+        setCategories(await financeService.getCategories())
+    }
+    const deleteCategory = async (id: string) => {
+        await financeService.deleteCategory(id)
         setCategories((prev) => prev.filter((c) => c.id !== id))
+    }
+
+    // ===== Balance derivado por cuenta (saldo inicial + movimientos confirmados) =====
+    const accountsView = useMemo<Account[]>(() => {
+        const net = new Map<string, number>()
+        const add = (id: string | null | undefined, delta: number) => {
+            if (!id) return
+            net.set(id, (net.get(id) ?? 0) + delta)
+        }
+        for (const t of transactions) {
+            if (t.status !== "confirmed") continue
+            if (t.type === "income") add(t.accountId, t.amount)
+            else if (t.type === "expense") add(t.accountId, -t.amount)
+            else if (t.type === "transfer") {
+                add(t.accountId, -t.amount)
+                add(t.transferAccountId, t.amount)
+            }
+        }
+        return accounts.map((a) => {
+            const base = a.initialBalance ?? a.balance
+            return { ...a, balance: base + (net.get(a.id) ?? 0) }
+        })
+    }, [accounts, transactions])
 
     // ===== Totals =====
     const totals = useMemo(() => {
-        const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0)
+        const totalBalance = accountsView.reduce((sum, acc) => sum + acc.balance, 0)
         const monthlyIncome = transactions
             .filter((t) => t.type === "income")
             .reduce((sum, t) => sum + t.amount, 0)
@@ -113,14 +180,14 @@ function CurrencyPage() {
             monthlyExpenses,
             monthlySavings: monthlyIncome - monthlyExpenses,
         }
-    }, [accounts, transactions])
+    }, [accountsView, transactions])
 
     // ===== Budget helpers =====
     const getBudgetPercentage = (budget: Budget) =>
-        Math.min((budget.spent / budget.limit) * 100, 100)
+        budget.amount > 0 ? Math.min((budget.spent / budget.amount) * 100, 100) : 0
 
     const getBudgetStatus = (budget: Budget): "exceeded" | "warning" | "safe" => {
-        const percentage = (budget.spent / budget.limit) * 100
+        const percentage = budget.amount > 0 ? (budget.spent / budget.amount) * 100 : 0
         if (percentage >= 100) return "exceeded"
         if (percentage >= 80) return "warning"
         return "safe"
@@ -129,7 +196,7 @@ function CurrencyPage() {
     return (
         <PageContainer>
             <CurrencyTab
-                accounts={accounts}
+                accounts={accountsView}
                 categories={categories}
                 transactions={transactions}
                 budgets={budgets}
