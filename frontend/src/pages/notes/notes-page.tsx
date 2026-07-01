@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ConfirmDeleteDialog } from '@/components/ui/ConfirmDeleteDialog';
 import {
   Dialog,
   DialogContent,
@@ -91,6 +92,8 @@ const NotesPage = () => {
   const [showFolderDialog, setShowFolderDialog] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [showNoteMenu, setShowNoteMenu] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Note | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const titleInputRef = useRef<HTMLTextAreaElement>(null);
   const contentInputRef = useRef<HTMLTextAreaElement>(null);
@@ -246,18 +249,23 @@ const NotesPage = () => {
     }, 600);
   };
 
-  // Delete note
-  const deleteNote = async (noteId: string) => {
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const noteId = deleteTarget.id;
     const prev = notes;
     setNotes((curr) => curr.filter((n) => n.id !== noteId));
     if (selectedNoteId === noteId) setSelectedNoteId(null);
     setShowNoteMenu(null);
     try {
       await notesService.deleteNote(noteId);
+      setDeleteTarget(null);
     } catch (err) {
       console.error(err);
       toast.error('No se pudo eliminar la nota');
       setNotes(prev);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -420,7 +428,8 @@ const NotesPage = () => {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              deleteNote(note.id);
+              setShowNoteMenu(null);
+              setDeleteTarget(note);
             }}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-destructive/10 transition-colors text-destructive"
           >
@@ -694,7 +703,7 @@ const NotesPage = () => {
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  onClick={() => deleteNote(selectedNote.id)}
+                  onClick={() => setDeleteTarget(selectedNote)}
                   className="text-destructive hover:text-destructive"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -818,6 +827,20 @@ const NotesPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Eliminar nota"
+        description={
+          <>
+            ¿Estás seguro de que deseas eliminar la nota{' '}
+            <strong>{deleteTarget?.title || 'Sin título'}</strong>? Esta acción no se puede deshacer.
+          </>
+        }
+        onConfirm={handleConfirmDelete}
+        loading={deleting}
+      />
     </div>
   );
 };

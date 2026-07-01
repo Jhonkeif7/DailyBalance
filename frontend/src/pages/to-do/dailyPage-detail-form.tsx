@@ -13,12 +13,10 @@ import {
   Paperclip,
   Trash2,
   GripVertical,
-  AlertTriangle
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/Button';
+import { ConfirmDeleteDialog } from '@/components/ui/ConfirmDeleteDialog';
 import { cn } from '@/lib/utils';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import DatePickerDropdown from './DatePickerDropdown';
@@ -612,49 +610,21 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
       </div>
 
       {/* Delete Confirmation Modal */}
-      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
-                <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
-              </div>
-              <div>
-                <DialogTitle>Eliminar tarea</DialogTitle>
-                <DialogDescription className="mt-1">
-                  ¿Estás seguro que deseas eliminar esta tarea?
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground">
-              Esta acción no se puede deshacer. La tarea "<span className="font-medium text-foreground">{selectedTask.title}</span>" será eliminada permanentemente.
-            </p>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowDeleteConfirm(false)}
-              className="mr-2 cursor-pointer"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => {
-                deleteTask(selectedTask.id);
-                setShowDeleteConfirm(false);
-              }}
-              className="cursor-pointer"
-            >
-              Eliminar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDeleteDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Eliminar tarea"
+        description={
+          <>
+            ¿Estás seguro de que deseas eliminar la tarea{' '}
+            <strong>{selectedTask.title || 'Sin título'}</strong>? Esta acción no se puede deshacer.
+          </>
+        }
+        onConfirm={() => {
+          deleteTask(selectedTask.id);
+          setShowDeleteConfirm(false);
+        }}
+      />
     </div>
     </>
   );
