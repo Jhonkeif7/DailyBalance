@@ -1,10 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo_dailybalance.png";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { useAuth } from "@/lib/auth";
 import { isSettingsAdmin } from "@/lib/settings-admin";
+import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
+import { getProfileById, type Profile } from "@/services/profiles.service";
 import {
     LayoutDashboard,
     Calendar,
@@ -70,6 +72,25 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
     const location = useLocation();
     const { isSmallScreen } = useBreakpoint();
     const { user, signOut } = useAuth();
+    const [profile, setProfile] = useState<Profile | null>(null);
+
+    useEffect(() => {
+        if (!user?.id) {
+            setProfile(null);
+            return;
+        }
+        let cancelled = false;
+        getProfileById(user.id)
+            .then((data) => {
+                if (!cancelled) setProfile(data);
+            })
+            .catch(() => {
+                if (!cancelled) setProfile(null);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [user?.id]);
 
     // Auto-close sidebar on navigation (mobile/tablet)
     useEffect(() => {
@@ -90,10 +111,10 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
 
     const displayEmail = user?.email ?? "m@example.com";
     const displayName =
+        profile?.full_name ??
         (user?.user_metadata?.full_name as string | undefined) ??
         displayEmail.split("@")[0] ??
         "Usuario";
-    const avatarLetter = displayName.charAt(0).toUpperCase() || "U";
     const showSettings = isSettingsAdmin(user?.email);
 
     return (
@@ -200,9 +221,12 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                 {/* User Profile */}
                 <div className="border-t border-sidebar-border p-3">
                     <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors cursor-pointer">
-                        <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm shrink-0">
-                            {avatarLetter}
-                        </div>
+                        <ProfileAvatar
+                            name={displayName}
+                            email={displayEmail}
+                            avatarUrl={profile?.avatar_url}
+                            size="sm"
+                        />
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-sidebar-foreground truncate">
                                 {displayName}
