@@ -21,6 +21,7 @@ import {
   AlignCenter,
   AlignRight,
   Minus,
+  ChevronLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -33,6 +34,7 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useBreakpoint } from '@/hooks/useBreakpoint';
 import * as notesService from '@/services/notes.service';
 
 // Types
@@ -75,6 +77,7 @@ const ALL_FOLDER: NoteFolder = {
 };
 
 const NotesPage = () => {
+  const { isSmallScreen } = useBreakpoint();
   const [dbFolders, setDbFolders] = useState<NoteFolder[]>([]);
   const folders: NoteFolder[] = [ALL_FOLDER, ...dbFolders];
 
@@ -362,7 +365,7 @@ const NotesPage = () => {
           e.stopPropagation();
           setShowNoteMenu(showNoteMenu === note.id ? null : note.id);
         }}
-        className="absolute right-2 top-2 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-muted transition-all"
+        className="group-hover-actions absolute right-2 top-2 rounded-md p-1 transition-all hover:bg-muted"
       >
         <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
       </button>
@@ -430,9 +433,9 @@ const NotesPage = () => {
   );
 
   return (
-    <div className="h-screen bg-background flex overflow-hidden">
-      {/* Sidebar - Folders */}
-      <div className="w-64 border-r border-border bg-card/50 flex flex-col">
+    <div className="-mx-4 -mb-4 flex h-[calc(100dvh-6rem)] min-h-0 overflow-hidden sm:-mx-6 sm:-mb-6 lg:h-[calc(100dvh-7rem)]">
+      {/* Sidebar - Folders (solo escritorio) */}
+      <div className="hidden w-64 shrink-0 flex-col border-r border-border bg-card/50 lg:flex">
         {/* Header */}
         <div className="p-4 border-b border-border">
           <h1 className="text-lg font-semibold text-foreground">Carpetas</h1>
@@ -474,7 +477,43 @@ const NotesPage = () => {
       </div>
 
       {/* Notes list */}
-      <div className="w-80 border-r border-border flex flex-col bg-background">
+      <div
+        className={cn(
+          'flex w-full shrink-0 flex-col border-r border-border bg-background lg:w-80',
+          isSmallScreen && selectedNoteId && 'hidden lg:flex'
+        )}
+      >
+        {/* Selector de carpetas (móvil) */}
+        {isSmallScreen && (
+          <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-border px-3 py-2">
+            {folders.map((folder) => (
+              <button
+                key={folder.id}
+                onClick={() => setSelectedFolderId(folder.id)}
+                className={cn(
+                  'flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs transition-all',
+                  selectedFolderId === folder.id
+                    ? 'bg-primary/15 text-foreground dark:bg-primary/10'
+                    : 'text-muted-foreground hover:bg-accent/50'
+                )}
+              >
+                <Folder className={cn('h-3.5 w-3.5', folder.color)} />
+                <span className="font-medium">{folder.name}</span>
+                <span className="text-muted-foreground">{getNotesCount(folder.id)}</span>
+              </button>
+            ))}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="shrink-0"
+              onClick={() => setShowFolderDialog(true)}
+              aria-label="Nueva carpeta"
+            >
+              <FolderPlus className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
         {/* Search and controls */}
         <div className="p-4 space-y-3 border-b border-border">
           {/* Search */}
@@ -584,12 +623,28 @@ const NotesPage = () => {
       </div>
 
       {/* Editor */}
-      <div className="flex-1 flex flex-col bg-background">
+      <div
+        className={cn(
+          'flex min-w-0 flex-1 flex-col bg-background',
+          isSmallScreen && !selectedNoteId && 'hidden lg:flex'
+        )}
+      >
         {selectedNote ? (
           <>
             {/* Editor toolbar */}
-            <div className="flex items-center justify-between px-6 py-3 border-b border-border">
-              <div className="flex items-center gap-1">
+            <div className="flex items-center justify-between gap-2 overflow-x-auto px-3 py-3 sm:px-6 border-b border-border">
+              <div className="flex shrink-0 items-center gap-1">
+                {isSmallScreen && (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setSelectedNoteId(null)}
+                    aria-label="Volver a la lista"
+                    className="mr-1"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button variant="ghost" size="icon-sm">
                   <Bold className="w-4 h-4" />
                 </Button>
@@ -649,7 +704,7 @@ const NotesPage = () => {
 
             {/* Editor content */}
             <div className="flex-1 overflow-y-auto">
-              <div className="max-w-3xl mx-auto px-8 py-6">
+              <div className="mx-auto max-w-3xl px-4 py-4 sm:px-8 sm:py-6">
                 {/* Last edited date */}
                 <p className="text-xs text-muted-foreground text-center mb-6">
                   {formatFullDate(selectedNote.updatedAt)}
@@ -676,13 +731,13 @@ const NotesPage = () => {
                     updateNote(selectedNote.id, { content: e.target.value })
                   }
                   placeholder="Empieza a escribir..."
-                  className="w-full text-base text-foreground bg-transparent border-none outline-none resize-none placeholder:text-muted-foreground/50 leading-relaxed min-h-[calc(100vh-300px)]"
+                  className="w-full min-h-[50dvh] resize-none border-none bg-transparent text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/50 lg:min-h-[calc(100vh-300px)]"
                 />
               </div>
             </div>
 
             {/* Folder indicator */}
-            <div className="px-6 py-3 border-t border-border flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex shrink-0 items-center gap-2 border-t border-border px-4 py-3 text-sm text-muted-foreground sm:px-6">
               <Folder
                 className={cn(
                   'w-4 h-4',

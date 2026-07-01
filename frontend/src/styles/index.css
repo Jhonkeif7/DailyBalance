@@ -152,6 +152,21 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+@layer components {
+  /* Visible en táctil; oculto hasta hover en dispositivos con puntero fino */
+  .group-hover-actions {
+    @apply opacity-100 transition-opacity focus-within:opacity-100;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .group-hover-actions {
+      @apply opacity-0;
+    }
+    .group:hover .group-hover-actions {
+      @apply opacity-100;
+    }
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

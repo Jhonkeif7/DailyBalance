@@ -4,13 +4,13 @@ import { cn } from "@/lib/utils";
 import logo from "@/assets/logo_dailybalance.png";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { useAuth } from "@/lib/auth";
+import { isSettingsAdmin } from "@/lib/settings-admin";
 import {
     LayoutDashboard,
     Calendar,
     Wallet,
     User,
     Settings,
-    Search,
     LogOut,
     FileText,
     FolderOpen,
@@ -94,6 +94,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
         displayEmail.split("@")[0] ??
         "Usuario";
     const avatarLetter = displayName.charAt(0).toUpperCase() || "U";
+    const showSettings = isSettingsAdmin(user?.email);
 
     return (
         <>
@@ -142,20 +143,9 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                     </button>
                 </div>
 
-                {/* Search */}
-                <div className="border-b border-sidebar-border p-3">
-                    <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200">
-                        <Search className="w-5 h-5 shrink-0" />
-                        <span>Buscar</span>
-                        <kbd className="ml-auto text-xs bg-sidebar-accent px-2 py-0.5 rounded hidden sm:inline">
-                            ⌘K
-                        </kbd>
-                    </button>
-                </div>
-
                 {/* Navigation */}
                 <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-6">
-                    <div className="space-y-0.5">
+                    <NavSection title="Principal">
                         <NavItem
                             to="/dashboard"
                             icon={<LayoutDashboard className="w-5 h-5" />}
@@ -171,7 +161,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                             icon={<Wallet className="w-5 h-5" />}
                             label="Finanzas"
                         />
-                    </div>
+                    </NavSection>
 
                     <NavSection title="Documentos">
                         <NavItem
@@ -197,11 +187,13 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                             icon={<User className="w-5 h-5" />}
                             label="Mi Perfil"
                         />
-                        <NavItem
-                            to="/settings"
-                            icon={<Settings className="w-5 h-5" />}
-                            label="Configuración"
-                        />
+                        {showSettings && (
+                            <NavItem
+                                to="/settings"
+                                icon={<Settings className="w-5 h-5" />}
+                                label="Configuración"
+                            />
+                        )}
                     </NavSection>
                 </nav>
 

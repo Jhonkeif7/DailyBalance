@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 // Layout
 import AppLayout from "@/components/layout/AppLayout";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
+import { SettingsAdminRoute } from "@/components/layout/SettingsAdminRoute";
 
 // Pages
 import LoginPage from "@/pages/auth/LoginPage";
@@ -109,9 +110,11 @@ export function AppRoutes() {
                 path="/settings" 
                 element={
                     <ProtectedRoute>
-                        <AppLayout title="Configuración" subtitle="Preferencias de la aplicación">
-                            <SettingsPage />
-                        </AppLayout>
+                        <SettingsAdminRoute>
+                            <AppLayout title="Configuración" subtitle="Preferencias de la aplicación">
+                                <SettingsPage />
+                            </AppLayout>
+                        </SettingsAdminRoute>
                     </ProtectedRoute>
                 } 
             />

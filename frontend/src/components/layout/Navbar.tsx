@@ -60,8 +60,8 @@ function Navbar({ title, subtitle, onMenuToggle }: NavbarProps) {
 
                 <Button variant="ghost" size="icon" asChild className="cursor-pointer hidden sm:flex">
                     <a
-                        href="https://github.com"
-                        target="_blank"
+                        href="https://github.com/Jhonkeif7"
+                        target="Perfil del creador"
                         rel="noopener noreferrer"
                     >
                         <Github className="h-5 w-5" />

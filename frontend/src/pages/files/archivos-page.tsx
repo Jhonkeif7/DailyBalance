@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import * as filesService from "@/services/files.service";
 import {
     Select,
@@ -39,6 +39,7 @@ import {
     FileCode,
     FileVideo,
     FileAudio,
+    Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -270,59 +271,63 @@ function FileListItem({
     onPreview: (file: FileItem) => void;
 }) {
     return (
-        <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors border border-border/30 group">
-            <div className="p-2 rounded-lg bg-card/50">
-                {getFileIcon(file.type)}
-            </div>
-            
-            <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{file.name}</p>
-                <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                        <HardDrive className="w-3 h-3" />
-                        {formatFileSize(file.size)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatDate(file.uploadDate)}
-                    </span>
-                    {file.folder && (
-                        <Badge variant="outline" className="text-xs">
-                            <Folder className="w-3 h-3 mr-1" />
-                            {file.folder}
-                        </Badge>
-                    )}
+        <div className="group rounded-lg border border-border/30 bg-muted/30 p-3 transition-colors hover:bg-muted/50 sm:p-4">
+            <div className="flex gap-3">
+                <div className="shrink-0 self-start rounded-lg bg-card/50 p-2">
+                    {getFileIcon(file.type)}
                 </div>
-            </div>
-            
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => onPreview(file)}
-                    title="Previsualizar"
-                >
-                    <Eye className="w-4 h-4" />
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => onDownload(file)}
-                    title="Descargar"
-                >
-                    <Download className="w-4 h-4" />
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                    onClick={() => onDelete(file.id)}
-                    title="Eliminar"
-                >
-                    <Trash2 className="w-4 h-4" />
-                </Button>
+
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                        <p className="min-w-0 flex-1 truncate text-sm font-medium sm:text-base" title={file.name}>
+                            {file.name}
+                        </p>
+                        <div className="group-hover-actions flex shrink-0 items-center gap-0.5">
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => onPreview(file)}
+                                aria-label={`Previsualizar ${file.name}`}
+                            >
+                                <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => onDownload(file)}
+                                aria-label={`Descargar ${file.name}`}
+                            >
+                                <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="text-muted-foreground hover:text-destructive"
+                                onClick={() => onDelete(file.id)}
+                                aria-label={`Eliminar ${file.name}`}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                            <HardDrive className="h-3 w-3 shrink-0" aria-hidden="true" />
+                            {formatFileSize(file.size)}
+                        </span>
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                            <Clock className="h-3 w-3 shrink-0" aria-hidden="true" />
+                            {formatDate(file.uploadDate)}
+                        </span>
+                        {file.folder && (
+                            <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-normal">
+                                <Folder className="mr-1 h-3 w-3" aria-hidden="true" />
+                                {file.folder}
+                            </Badge>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -409,6 +414,8 @@ const ArchivesPage = () => {
     const [, setLoading] = useState(true);
     const [showNewFolder, setShowNewFolder] = useState(false);
     const [newFolderName, setNewFolderName] = useState("");
+    const [deleteTarget, setDeleteTarget] = useState<FileItem | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     // Opciones del selector de carpetas.
     const folders = ["Todos", ...folderList.map((f) => f.name)];
@@ -522,18 +529,27 @@ const ArchivesPage = () => {
         toast.info("Subida cancelada");
     };
 
-    const handleDeleteFile = async (id: string) => {
+    const requestDeleteFile = (id: string) => {
         const file = files.find((f) => f.id === id);
-        if (!file) return;
+        if (file) setDeleteTarget(file);
+    };
+
+    const handleDeleteFile = async () => {
+        if (!deleteTarget) return;
+        const file = deleteTarget;
         const prev = files;
-        setFiles((curr) => curr.filter((f) => f.id !== id));
+        setDeleting(true);
+        setFiles((curr) => curr.filter((f) => f.id !== file.id));
         try {
             await filesService.deleteFile({ id: file.id, storagePath: file.storagePath });
+            setDeleteTarget(null);
             toast.success("Archivo eliminado");
         } catch (err) {
             console.error(err);
             toast.error("No se pudo eliminar el archivo");
             setFiles(prev);
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -582,23 +598,23 @@ const ArchivesPage = () => {
     return (
         <PageContainer>
             {/* Header con estadísticas */}
-            <div className="grid grid-cols-1 gap-2 sm:gap-3 md:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2 xl:grid-cols-3 xl:gap-4">
                 <StatCard
-                    compact
+                    compactOnMobile
                     title="Archivos totales"
                     value={String(totalFiles)}
                     tone="primary"
                     icon={<Folder className="h-full w-full" />}
                 />
                 <StatCard
-                    compact
+                    compactOnMobile
                     title="Espacio utilizado"
                     value={formatFileSize(totalSize)}
                     tone="muted"
                     icon={<HardDrive className="h-full w-full" />}
                 />
                 <StatCard
-                    compact
+                    compactOnMobile
                     title="En proceso"
                     value={String(uploadingFiles.length)}
                     tone="primary"
@@ -643,77 +659,86 @@ const ArchivesPage = () => {
             {/* Lista de archivos */}
             <Card className="bg-card/60 backdrop-blur border-border/60">
                 <CardHeader>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div>
-                            <CardTitle>Mis Archivos</CardTitle>
-                            <CardDescription>
-                                {filteredFiles.length} archivos encontrados
-                            </CardDescription>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowNewFolder(true)}>
-                                <FolderPlus className="w-4 h-4" />
-                                Nueva carpeta
-                            </Button>
-                        </div>
+                    <div>
+                        <CardTitle>Mis Archivos</CardTitle>
+                        <CardDescription>
+                            {filteredFiles.length} archivos encontrados
+                        </CardDescription>
                     </div>
-                    
-                    {/* Filtros */}
-                    <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+
+                    {/* Búsqueda + nueva carpeta */}
+                    <div className="mt-4 flex items-center gap-2">
+                        <div className="relative min-w-0 flex-1">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 placeholder="Buscar archivos..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10 bg-muted/30"
+                                className="bg-muted/30 pl-10"
                             />
                         </div>
-                        
-                        <Select value={selectedFolder} onValueChange={setSelectedFolder}>
-                            <SelectTrigger className="w-full sm:w-[150px] bg-muted/30">
-                                <Folder className="w-4 h-4 mr-2" />
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {folders.map((folder) => (
-                                    <SelectItem key={folder} value={folder}>{folder}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        
-                        <Select value={selectedType} onValueChange={setSelectedType}>
-                            <SelectTrigger className="w-full sm:w-[150px] bg-muted/30">
-                                <File className="w-4 h-4 mr-2" />
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todos</SelectItem>
-                                <SelectItem value="pdf">PDF</SelectItem>
-                                <SelectItem value="spreadsheet">Excel</SelectItem>
-                                <SelectItem value="document">Documentos</SelectItem>
-                                <SelectItem value="image">Imágenes</SelectItem>
-                                <SelectItem value="archive">Archivos ZIP</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        
-                        <div className="flex border border-border rounded-lg overflow-hidden">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0 gap-2"
+                            onClick={() => setShowNewFolder(true)}
+                        >
+                            <FolderPlus className="h-4 w-4" />
+                            <span className="hidden sm:inline">Nueva carpeta</span>
+                        </Button>
+                    </div>
+
+                    {/* Filtros en una línea */}
+                    <div className="mt-3 flex items-center gap-2">
+                        <div className="min-w-0 flex-1 sm:flex-none">
+                            <Select value={selectedFolder} onValueChange={setSelectedFolder}>
+                                <SelectTrigger size="sm" className="w-full bg-muted/30 sm:w-[150px]">
+                                    <Folder className="mr-2 h-4 w-4 shrink-0" />
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {folders.map((folder) => (
+                                        <SelectItem key={folder} value={folder}>{folder}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="min-w-0 flex-1 sm:flex-none">
+                            <Select value={selectedType} onValueChange={setSelectedType}>
+                                <SelectTrigger size="sm" className="w-full bg-muted/30 sm:w-[150px]">
+                                    <File className="mr-2 h-4 w-4 shrink-0" />
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos</SelectItem>
+                                    <SelectItem value="pdf">PDF</SelectItem>
+                                    <SelectItem value="spreadsheet">Excel</SelectItem>
+                                    <SelectItem value="document">Documentos</SelectItem>
+                                    <SelectItem value="image">Imágenes</SelectItem>
+                                    <SelectItem value="archive">Archivos ZIP</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="flex shrink-0 overflow-hidden rounded-lg border border-border">
                             <Button
                                 variant={viewMode === "list" ? "secondary" : "ghost"}
-                                size="sm"
-                                className="rounded-none h-9"
+                                size="icon-sm"
+                                className="rounded-none"
                                 onClick={() => setViewMode("list")}
+                                aria-label="Vista lista"
                             >
-                                <List className="w-4 h-4" />
+                                <List className="h-4 w-4" />
                             </Button>
                             <Button
                                 variant={viewMode === "grid" ? "secondary" : "ghost"}
-                                size="sm"
-                                className="rounded-none h-9"
+                                size="icon-sm"
+                                className="rounded-none"
                                 onClick={() => setViewMode("grid")}
+                                aria-label="Vista cuadrícula"
                             >
-                                <Grid3X3 className="w-4 h-4" />
+                                <Grid3X3 className="h-4 w-4" />
                             </Button>
                         </div>
                     </div>
@@ -734,7 +759,7 @@ const ArchivesPage = () => {
                                 <FileListItem
                                     key={file.id}
                                     file={file}
-                                    onDelete={handleDeleteFile}
+                                    onDelete={requestDeleteFile}
                                     onDownload={handleDownloadFile}
                                     onPreview={handlePreviewFile}
                                 />
@@ -746,7 +771,7 @@ const ArchivesPage = () => {
                                 <FileGridItem
                                     key={file.id}
                                     file={file}
-                                    onDelete={handleDeleteFile}
+                                    onDelete={requestDeleteFile}
                                     onDownload={handleDownloadFile}
                                     onPreview={handlePreviewFile}
                                 />
@@ -782,6 +807,40 @@ const ArchivesPage = () => {
                         </Button>
                         <Button variant="success" onClick={handleCreateFolder} disabled={!newFolderName.trim()}>
                             Crear
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Confirmación de eliminación */}
+            <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && !deleting && setDeleteTarget(null)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Eliminar archivo</DialogTitle>
+                        <DialogDescription>
+                            ¿Estás seguro de que deseas eliminar{" "}
+                            <strong>{deleteTarget?.name}</strong>? Esta acción no se puede deshacer.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button
+                            variant="outline"
+                            onClick={() => setDeleteTarget(null)}
+                            disabled={deleting}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={() => void handleDeleteFile()}
+                            disabled={deleting}
+                        >
+                            {deleting ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Trash2 className="mr-2 h-4 w-4" />
+                            )}
+                            Eliminar
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -19,6 +19,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
+import { useBreakpoint } from '@/hooks/useBreakpoint';
 import DatePickerDropdown from './DatePickerDropdown';
 import ReminderPickerDropdown from './ReminderPickerDropdown';
 import RepeatPickerDropdown from './RepeatPickerDropdown';
@@ -185,6 +187,8 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
   selectTaskRepeat,
   clearTaskRepeat,
 }) => {
+  const { isSmallScreen } = useBreakpoint();
+
   // Resize state
   const [panelWidth, setPanelWidth] = useState(400);
   const [isResizing, setIsResizing] = useState(false);
@@ -231,6 +235,16 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
       document.body.style.userSelect = '';
     };
   }, [isResizing, handleMouseMove, handleMouseUp]);
+
+  // Bloquear scroll del body cuando el panel ocupa toda la pantalla
+  useEffect(() => {
+    if (isSmallScreen && selectedTask) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [isSmallScreen, selectedTask]);
 
   const selectTaskQuickDate = (date: Date) => {
     if (selectedTask) {
@@ -316,14 +330,35 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
   if (!selectedTask) return null;
 
   return (
-    <div 
-      className="h-[90%] bg-card border-l border-border flex flex-col relative"
-      style={{ width: `${panelWidth}px`, minWidth: `${MIN_WIDTH}px` }}
-    >
-      {/* Resize Handle */}
+    <>
+      {isSmallScreen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setSelectedTask(null)}
+          aria-hidden="true"
+        />
+      )}
+
+      <div
+        className={cn(
+          'relative flex flex-col bg-card',
+          isSmallScreen
+            ? 'fixed inset-0 z-50 h-dvh w-full max-w-full overflow-hidden'
+            : 'h-[90%] border-l border-border'
+        )}
+        style={
+          isSmallScreen
+            ? undefined
+            : { width: `${panelWidth}px`, minWidth: `${MIN_WIDTH}px` }
+        }
+      >
+      {/* Resize Handle — solo escritorio */}
       <div
         onMouseDown={handleMouseDown}
-        className={`absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary/50 transition-colors z-10 group flex items-center ${isResizing ? 'bg-primary/50' : ''}`}
+        className={cn(
+          'absolute left-0 top-0 bottom-0 z-10 hidden w-1 cursor-ew-resize group items-center hover:bg-primary/50 lg:flex',
+          isResizing && 'bg-primary/50'
+        )}
       >
         <div className="absolute left-0 w-4 h-16 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity -translate-x-1/2">
           <GripVertical className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
@@ -621,6 +656,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
 

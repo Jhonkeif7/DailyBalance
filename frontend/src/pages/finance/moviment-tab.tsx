@@ -202,65 +202,86 @@ function MovimentTab({
               </Button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="h-8 w-[130px]">
-                  <SelectValue placeholder="Tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los tipos</SelectItem>
-                  <SelectItem value="income">Ingresos</SelectItem>
-                  <SelectItem value="expense">Gastos</SelectItem>
-                  <SelectItem value="transfer">Transferencias</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2 sm:hidden">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Filter className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="text-xs font-medium">Filtros</span>
+                </div>
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 gap-1 text-muted-foreground">
+                    <X className="h-4 w-4" aria-hidden="true" />
+                    Limpiar
+                  </Button>
+                )}
+              </div>
 
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="h-8 w-[150px]">
-                  <SelectValue placeholder="Categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas las categorías</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+                <Filter className="hidden h-4 w-4 shrink-0 text-muted-foreground sm:block" aria-hidden="true" />
 
-              <Select value={filterAccount} onValueChange={setFilterAccount}>
-                <SelectTrigger className="h-8 w-[140px]">
-                  <SelectValue placeholder="Cuenta" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas las cuentas</SelectItem>
-                  {accounts.map((acc) => (
-                    <SelectItem key={acc.id} value={acc.id}>
-                      {acc.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Select value={filterAccount} onValueChange={setFilterAccount}>
+                  <SelectTrigger className="h-8 w-full min-w-0 sm:w-[140px]">
+                    <SelectValue placeholder="Cuenta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Cuentas</SelectItem>
+                    {accounts.map((acc) => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        {acc.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="h-8 w-[130px]">
-                  <SelectValue placeholder="Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
-                  <SelectItem value="confirmed">Confirmado</SelectItem>
-                  <SelectItem value="pending">Pendiente</SelectItem>
-                </SelectContent>
-              </Select>
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger className="h-8 w-full min-w-0 sm:w-[150px]">
+                    <SelectValue placeholder="Categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Categorías</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 gap-1 text-muted-foreground">
-                  <X className="h-4 w-4" aria-hidden="true" />
-                  Limpiar
-                </Button>
-              )}
+                <Select value={filterType} onValueChange={setFilterType}>
+                  <SelectTrigger className="h-8 w-full min-w-0 sm:w-[130px]">
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Movimientos</SelectItem>
+                    <SelectItem value="income">Ingresos</SelectItem>
+                    <SelectItem value="expense">Gastos</SelectItem>
+                    <SelectItem value="transfer">Transferencias</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="h-8 w-full min-w-0 sm:w-[130px]">
+                    <SelectValue placeholder="Estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Estados</SelectItem>
+                    <SelectItem value="confirmed">Confirmado</SelectItem>
+                    <SelectItem value="pending">Pendiente</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {hasActiveFilters && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="hidden h-8 gap-1 text-muted-foreground sm:inline-flex"
+                  >
+                    <X className="h-4 w-4" aria-hidden="true" />
+                    Limpiar
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </CardContent>
@@ -339,7 +360,7 @@ function MovimentTab({
                               : "Gasto"}
                         </p>
                       </div>
-                      <div className="flex items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                      <div className="group-hover-actions flex items-center">
                         <Button
                           variant="ghost"
                           size="icon-sm"

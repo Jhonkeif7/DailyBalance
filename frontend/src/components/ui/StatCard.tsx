@@ -28,6 +28,8 @@ interface StatCardProps {
   trendValue?: string
   /** Versión más densa, con menos padding y tipografía más pequeña. */
   compact?: boolean
+  /** Compacto en móvil; tamaño normal desde el breakpoint `xl`. */
+  compactOnMobile?: boolean
   className?: string
 }
 
@@ -40,23 +42,35 @@ function StatCard({
   trend,
   trendValue,
   compact = false,
+  compactOnMobile = false,
   className,
 }: StatCardProps) {
+  const dense = compact || compactOnMobile
+
   return (
     <Card
       className={cn(
         "bg-card/60 backdrop-blur border-border/60 transition-shadow hover:shadow-md",
+        dense && "gap-0 rounded-lg py-0 xl:gap-6 xl:rounded-xl xl:py-6",
         compact && "gap-0 py-0 rounded-lg",
         className
       )}
     >
-      <CardContent className={cn(compact ? "p-3 sm:p-3.5" : "p-4 sm:p-6")}>
-        <div className="flex items-center justify-between gap-3">
+      <CardContent
+        className={cn(
+          compactOnMobile && "p-2.5 xl:p-6",
+          compact && !compactOnMobile && "p-3 sm:p-3.5",
+          !dense && "p-4 sm:p-6"
+        )}
+      >
+        <div className="flex items-center justify-between gap-2 xl:gap-3">
           <div className="min-w-0 flex-1">
             <p
               className={cn(
                 "truncate font-medium text-muted-foreground",
-                compact ? "text-[11px]" : "text-xs sm:text-sm"
+                compactOnMobile && "text-[10px] leading-tight xl:text-sm",
+                compact && !compactOnMobile && "text-[11px]",
+                !dense && "text-xs sm:text-sm"
               )}
             >
               {title}
@@ -64,7 +78,9 @@ function StatCard({
             <p
               className={cn(
                 "truncate font-bold text-foreground",
-                compact ? "text-lg" : "mt-1 text-xl sm:text-2xl"
+                compactOnMobile && "text-base xl:mt-1 xl:text-2xl",
+                compact && !compactOnMobile && "text-lg",
+                !dense && "mt-1 text-xl sm:text-2xl"
               )}
             >
               {value}
@@ -73,7 +89,9 @@ function StatCard({
               <p
                 className={cn(
                   "flex items-center gap-1 text-muted-foreground",
-                  compact ? "mt-0.5 text-[10px]" : "mt-1 text-[10px] sm:text-xs"
+                  compactOnMobile && "mt-0.5 text-[9px] leading-tight xl:mt-1 xl:text-xs",
+                  compact && !compactOnMobile && "mt-0.5 text-[10px]",
+                  !dense && "mt-1 text-[10px] sm:text-xs"
                 )}
               >
                 {trend && trendValue && (
@@ -98,11 +116,19 @@ function StatCard({
           <div
             className={cn(
               "flex-shrink-0 rounded-lg",
-              compact ? "p-2" : "p-2 sm:rounded-xl sm:p-3",
+              compactOnMobile && "p-1.5 xl:rounded-xl xl:p-3",
+              compact && !compactOnMobile && "p-2",
+              !dense && "p-2 sm:rounded-xl sm:p-3",
               toneClasses[tone]
             )}
           >
-            <div className={cn(compact ? "h-4 w-4" : "h-4 w-4 sm:h-5 sm:w-5")}>
+            <div
+              className={cn(
+                compactOnMobile && "h-3.5 w-3.5 xl:h-5 xl:w-5",
+                compact && !compactOnMobile && "h-4 w-4",
+                !dense && "h-4 w-4 sm:h-5 sm:w-5"
+              )}
+            >
               {icon}
             </div>
           </div>

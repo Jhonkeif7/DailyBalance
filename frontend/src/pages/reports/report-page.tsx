@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import * as reportsService from "@/services/reports.service";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/Card";
 import { PageContainer } from "@/components/ui/PageContainer";
+import { StatCard } from "@/components/ui/StatCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
@@ -26,8 +27,6 @@ import {
     Wallet,
     CreditCard,
     Sparkles,
-    ArrowUpRight,
-    ArrowDownRight,
 } from "lucide-react";
 
 // Tipos
@@ -59,50 +58,6 @@ interface ProductivityRow {
 
 const currencyFmt = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
-
-// Componente de tarjeta de estadística
-function StatCard({ 
-    title, 
-    value, 
-    description, 
-    trend, 
-    trendValue, 
-    icon,
-    iconColor = "bg-primary/10 text-primary"
-}: {
-    title: string;
-    value: string;
-    description: string;
-    trend?: "up" | "down";
-    trendValue?: string;
-    icon: React.ReactNode;
-    iconColor?: string;
-}) {
-    return (
-        <Card className="bg-card/60 backdrop-blur border-border/60">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-                {trend && trendValue && (
-                    <span className={`flex items-center text-xs font-medium ${trend === "up" ? "text-success" : "text-destructive"}`}>
-                        {trend === "up" ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                        {trendValue}
-                    </span>
-                )}
-            </CardHeader>
-            <CardContent>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <div className="text-2xl font-bold text-foreground">{value}</div>
-                        <p className="text-xs text-muted-foreground mt-1">{description}</p>
-                    </div>
-                    <div className={`p-3 rounded-xl ${iconColor}`}>
-                        {icon}
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    );
-}
 
 // Componente de gráfico de barras
 function BarChartComponent({ data }: { data: MonthlyRow[] }) {
@@ -415,32 +370,38 @@ const ReportPage = () => {
                 {/* Tab: Finanzas */}
                 <TabsContent value="finance" className="space-y-6">
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 gap-2 xl:grid-cols-4 xl:gap-4">
                         <StatCard
+                            compactOnMobile
                             title="Ingresos Totales"
                             value={currencyFmt(totalIncome)}
                             description={`${monthly.length} meses`}
-                            icon={<TrendingUp className="w-5 h-5" />}
+                            icon={<TrendingUp className="h-full w-full" />}
+                            tone="success"
                         />
                         <StatCard
+                            compactOnMobile
                             title="Gastos Totales"
                             value={currencyFmt(totalExpense)}
                             description={`${monthly.length} meses`}
-                            icon={<TrendingDown className="w-5 h-5" />}
-                            iconColor="bg-destructive/10 text-destructive"
+                            icon={<TrendingDown className="h-full w-full" />}
+                            tone="destructive"
                         />
                         <StatCard
+                            compactOnMobile
                             title="Balance Neto"
                             value={currencyFmt(netBalance)}
                             description="Ahorro acumulado"
-                            icon={<Wallet className="w-5 h-5" />}
+                            icon={<Wallet className="h-full w-full" />}
+                            tone="primary"
                         />
                         <StatCard
+                            compactOnMobile
                             title="Promedio Mensual"
                             value={currencyFmt(monthlyAvg)}
                             description="Ahorro por mes"
-                            icon={<CreditCard className="w-5 h-5" />}
-                            iconColor="bg-primary/10 text-primary"
+                            icon={<CreditCard className="h-full w-full" />}
+                            tone="primary"
                         />
                     </div>
 
@@ -528,31 +489,38 @@ const ReportPage = () => {
                 {/* Tab: Productividad */}
                 <TabsContent value="productivity" className="space-y-6">
                     {/* Stats de productividad */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 gap-2 xl:grid-cols-4 xl:gap-4">
                         <StatCard
+                            compactOnMobile
                             title="Tareas Completadas"
                             value={String(totalCompleted)}
                             description="En el período"
-                            icon={<Target className="w-5 h-5" />}
+                            icon={<Target className="h-full w-full" />}
+                            tone="primary"
                         />
                         <StatCard
+                            compactOnMobile
                             title="Tasa de Éxito"
                             value={`${successRate}%`}
                             description="Completadas vs planeadas"
-                            icon={<Sparkles className="w-5 h-5" />}
+                            icon={<Sparkles className="h-full w-full" />}
+                            tone="success"
                         />
                         <StatCard
+                            compactOnMobile
                             title="Días Productivos"
                             value={`${productiveDays} días`}
                             description="Con 80% o más completado"
-                            icon={<TrendingUp className="w-5 h-5" />}
+                            icon={<TrendingUp className="h-full w-full" />}
+                            tone="success"
                         />
                         <StatCard
+                            compactOnMobile
                             title="Mejor Día"
                             value={bestDay}
                             description="Día más productivo"
-                            icon={<Calendar className="w-5 h-5" />}
-                            iconColor="bg-primary/10 text-primary"
+                            icon={<Calendar className="h-full w-full" />}
+                            tone="primary"
                         />
                     </div>
 

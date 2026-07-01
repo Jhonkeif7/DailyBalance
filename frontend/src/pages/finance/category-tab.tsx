@@ -182,7 +182,7 @@ function CategoryTab({ categories, upsertCategory, deleteCategory }: CategoryTab
                       </div>
                       <CardTitle className="text-base">{category.name}</CardTitle>
                     </div>
-                    <div className="flex items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                    <div className="group-hover-actions flex items-center">
                       <Button variant="ghost" size="icon-sm" onClick={() => openEdit(category)} aria-label={`Editar ${category.name}`}>
                         <Pencil className="h-4 w-4" aria-hidden="true" />
                       </Button>

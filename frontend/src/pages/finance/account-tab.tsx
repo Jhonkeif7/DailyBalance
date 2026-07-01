@@ -136,7 +136,7 @@ function AccountTab({ accounts, upsertAccount, deleteAccount }: AccountTabProps)
                         <CardDescription>{typeLabels[account.type as AccountType] ?? account.type}</CardDescription>
                       </div>
                     </div>
-                    <div className="flex items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                    <div className="group-hover-actions flex items-center">
                       <Button variant="ghost" size="icon-sm" onClick={() => openEdit(account)} aria-label={`Editar ${account.name}`}>
                         <Pencil className="h-4 w-4" aria-hidden="true" />
                       </Button>

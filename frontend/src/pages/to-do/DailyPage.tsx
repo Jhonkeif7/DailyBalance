@@ -973,11 +973,16 @@ const DailyPage = () => {
   return (
     <div className="h-screen bg-background flex overflow-hidden">
       {/* Main Content */}
-      <div className="flex-1 p-6 overflow-y-auto">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-semibold text-foreground" style={{ textWrap: "balance" }}>Lista de actividades</h1>
-          <div className="flex gap-2">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-4 sm:p-6">
+        <div className="mx-auto w-full max-w-7xl shrink-0 overflow-visible">
+          <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
+            <h1
+              className="text-xl font-semibold text-foreground sm:text-2xl"
+              style={{ textWrap: 'balance' }}
+            >
+              Lista de actividades
+            </h1>
+            <div className="flex gap-2">
             {/* Sort Dropdown */}
             <div className="relative" ref={sortDropdownRef}>
               <Button 
@@ -991,7 +996,7 @@ const DailyPage = () => {
               </Button>
               
               {showSortDropdown && (
-                <div className="absolute right-0 top-full mt-1 w-56 bg-card border border-border rounded-lg shadow-lg z-50 cursor-pointer">
+                <div className="absolute left-0 top-full z-50 mt-1 w-56 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card shadow-lg sm:left-auto sm:right-0">
                   <div className="flex items-center justify-between px-3 py-2 border-b border-border">
                     <span className="text-sm font-medium text-foreground">Ordenar por</span>
                     {sortMethod && (
@@ -1062,8 +1067,10 @@ const DailyPage = () => {
               <span className="text-sm">Categorías</span>
             </Button>
           </div>
+          </div>
         </div>
 
+        <div className="mx-auto min-h-0 w-full max-w-7xl flex-1 overflow-y-auto">
         {/* Categories Management Modal */}
         <Dialog open={showCategoriesModal} onOpenChange={setShowCategoriesModal}>
           <DialogContent className="sm:max-w-[500px]">
