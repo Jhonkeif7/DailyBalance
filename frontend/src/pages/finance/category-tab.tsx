@@ -33,6 +33,7 @@ import {
 import type { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { Category } from "./currency-tab"
 
@@ -94,6 +95,8 @@ const emptyForm: CategoryForm = {
 function CategoryTab({ categories, upsertCategory, deleteCategory }: CategoryTabProps) {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Category | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [form, setForm] = useState<CategoryForm>(emptyForm)
 
   const openCreate = () => {
@@ -142,13 +145,18 @@ function CategoryTab({ categories, upsertCategory, deleteCategory }: CategoryTab
     }
   }
 
-  const handleDelete = async (category: Category) => {
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
     try {
-      await deleteCategory(category.id)
+      await deleteCategory(deleteTarget.id)
       toast.success("Categoría eliminada")
+      setDeleteTarget(null)
     } catch (err) {
       console.error(err)
       toast.error("No se pudo eliminar la categoría")
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -189,7 +197,7 @@ function CategoryTab({ categories, upsertCategory, deleteCategory }: CategoryTab
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => handleDelete(category)}
+                        onClick={() => setDeleteTarget(category)}
                         className="text-muted-foreground hover:text-destructive"
                         aria-label={`Eliminar ${category.name}`}
                       >
@@ -318,6 +326,20 @@ function CategoryTab({ categories, upsertCategory, deleteCategory }: CategoryTab
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Eliminar categoría"
+        description={
+          <>
+            ¿Estás seguro de que deseas eliminar la categoría{" "}
+            <strong>{deleteTarget?.name}</strong>? Esta acción no se puede deshacer.
+          </>
+        }
+        onConfirm={handleConfirmDelete}
+        loading={deleting}
+      />
     </div>
   )
 }

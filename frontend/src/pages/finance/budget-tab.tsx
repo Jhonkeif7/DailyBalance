@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { DollarSign, Bell, Check, Plus, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
+import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog"
 import type { Category, Budget } from "./currency-tab"
 import { formatNumber, resolveCategoryIcon } from "./finance-utils"
 
@@ -48,6 +49,8 @@ function BudgetTab({
 }: BudgetTabProps) {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Budget | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Budget | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [form, setForm] = useState<BudgetForm>(emptyForm)
 
   const openCreate = () => {
@@ -90,13 +93,18 @@ function BudgetTab({
     }
   }
 
-  const handleDelete = async (budget: Budget) => {
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
     try {
-      await deleteBudget(budget.id)
+      await deleteBudget(deleteTarget.id)
       toast.success("Presupuesto eliminado")
+      setDeleteTarget(null)
     } catch (err) {
       console.error(err)
       toast.error("No se pudo eliminar el presupuesto")
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -169,7 +177,7 @@ function BudgetTab({
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            onClick={() => handleDelete(budget)}
+                            onClick={() => setDeleteTarget(budget)}
                             className="text-muted-foreground hover:text-destructive"
                             aria-label={`Eliminar presupuesto ${budgetName}`}
                           >
@@ -258,6 +266,23 @@ function BudgetTab({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Eliminar presupuesto"
+        description={
+          <>
+            ¿Estás seguro de que deseas eliminar el presupuesto de{" "}
+            <strong>
+              {categories.find((c) => c.id === deleteTarget?.categoryId)?.name ?? deleteTarget?.name}
+            </strong>
+            ? Esta acción no se puede deshacer.
+          </>
+        }
+        onConfirm={handleConfirmDelete}
+        loading={deleting}
+      />
     </div>
   )
 }

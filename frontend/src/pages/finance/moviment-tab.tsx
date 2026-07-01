@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { Plus, DollarSign, Pencil, Trash2, Search, X, Filter, ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
+import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog"
 import type { Transaction, Category, Account } from "./currency-tab"
 import { formatNumber, formatDate, todayInput, resolveCategoryIcon } from "./finance-utils"
 
@@ -58,6 +59,8 @@ function MovimentTab({
 }: MovimentTabProps) {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [form, setForm] = useState<TransactionForm>(emptyForm)
 
   // Filtros
@@ -169,13 +172,18 @@ function MovimentTab({
     }
   }
 
-  const handleDelete = async (transaction: Transaction) => {
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
     try {
-      await deleteTransaction(transaction.id)
+      await deleteTransaction(deleteTarget.id)
       toast.success("Movimiento eliminado")
+      setDeleteTarget(null)
     } catch (err) {
       console.error(err)
       toast.error("No se pudo eliminar el movimiento")
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -372,7 +380,7 @@ function MovimentTab({
                         <Button
                           variant="ghost"
                           size="icon-sm"
-                          onClick={() => handleDelete(transaction)}
+                          onClick={() => setDeleteTarget(transaction)}
                           className="text-muted-foreground hover:text-destructive"
                           aria-label={`Eliminar ${categoryName}`}
                         >
@@ -558,6 +566,23 @@ function MovimentTab({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Eliminar movimiento"
+        description={
+          <>
+            ¿Estás seguro de que deseas eliminar este movimiento
+            {deleteTarget?.description ? (
+              <> &quot;<strong>{deleteTarget.description}</strong>&quot;</>
+            ) : null}
+            ? Esta acción no se puede deshacer.
+          </>
+        }
+        onConfirm={handleConfirmDelete}
+        loading={deleting}
+      />
     </div>
   )
 }

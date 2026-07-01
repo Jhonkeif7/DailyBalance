@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog"
 import { Pencil, Trash2, Plus } from "lucide-react"
 import { toast } from "sonner"
+import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog"
 import type { Account } from "./currency-tab"
 import { resolveAccountIcon } from "./finance-utils"
 
@@ -44,6 +45,8 @@ const emptyForm: AccountForm = { name: "", type: "bank", balance: "", currency: 
 function AccountTab({ accounts, upsertAccount, deleteAccount }: AccountTabProps) {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Account | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Account | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [form, setForm] = useState<AccountForm>(emptyForm)
 
   // Movimientos ya aplicados a la cuenta = balance derivado - saldo base.
@@ -93,13 +96,18 @@ function AccountTab({ accounts, upsertAccount, deleteAccount }: AccountTabProps)
     }
   }
 
-  const handleDelete = async (account: Account) => {
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
     try {
-      await deleteAccount(account.id)
+      await deleteAccount(deleteTarget.id)
       toast.success("Cuenta eliminada")
+      setDeleteTarget(null)
     } catch (err) {
       console.error(err)
       toast.error("No se pudo eliminar la cuenta")
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -143,7 +151,7 @@ function AccountTab({ accounts, upsertAccount, deleteAccount }: AccountTabProps)
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => handleDelete(account)}
+                        onClick={() => setDeleteTarget(account)}
                         className="text-muted-foreground hover:text-destructive"
                         aria-label={`Eliminar ${account.name}`}
                       >
@@ -253,6 +261,20 @@ function AccountTab({ accounts, upsertAccount, deleteAccount }: AccountTabProps)
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Eliminar cuenta"
+        description={
+          <>
+            ¿Estás seguro de que deseas eliminar la cuenta{" "}
+            <strong>{deleteTarget?.name}</strong>? Esta acción no se puede deshacer.
+          </>
+        }
+        onConfirm={handleConfirmDelete}
+        loading={deleting}
+      />
     </div>
   )
 }
