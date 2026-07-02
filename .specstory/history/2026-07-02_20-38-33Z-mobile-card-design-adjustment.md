@@ -4227,3 +4227,100 @@ Listo. El botón del grid usa la misma lógica que la vista de lista.
 2. **`index.css`** — la regla de ocultar en hover solo aplica desde `640px`, para detectar móvil por ancho de pantalla
 
 El menú desplegable quedó dentro del mismo contenedor para que no desaparezca al mover el cursor hacia las opciones en desktop.
+
+---
+
+_**User**_
+
+5:39:35 PM: Netlify Build                                                 
+5:39:35 PM: ────────────────────────────────────────────────────────────────
+5:39:35 PM: ​
+5:39:35 PM: ❯ Version
+5:39:35 PM:   @netlify/build 36.1.0
+5:39:35 PM: ​
+5:39:35 PM: ❯ Flags
+5:39:35 PM:   accountId: 6936763e19808471119fcac0
+5:39:35 PM:   baseRelDir: true
+5:39:35 PM:   buildId: 6a46da8ac18aa60008b5163f
+5:39:35 PM:   deployId: 6a46da8ac18aa60008b51641
+5:39:35 PM: ​
+5:39:35 PM: ❯ Current directory
+5:39:35 PM:   /opt/build/repo/frontend
+5:39:35 PM: ​
+5:39:35 PM: ❯ Config file
+5:39:35 PM:   /opt/build/repo/frontend/netlify.toml
+5:39:35 PM: ​
+5:39:35 PM: ❯ Context
+5:39:35 PM:   production
+5:39:35 PM: ​
+5:39:35 PM: build.command from netlify.toml                               
+5:39:35 PM: ────────────────────────────────────────────────────────────────
+5:39:35 PM: ​
+5:39:35 PM: $ npm run build
+5:39:35 PM: > frontend@0.0.0 build
+5:39:35 PM: > tsc -b && vite build
+5:39:41 PM: src/pages/finance/CurrencyPicker.tsx(184,3): error TS6133: 'disabled' is declared but its value is never read.
+5:39:41 PM: src/pages/finance/currency-picker-context.tsx(1,25): error TS6133: 'useCallback' is declared but its value is never read.
+5:39:41 PM: ​
+5:39:41 PM: "build.command" failed                                        
+5:39:41 PM: ────────────────────────────────────────────────────────────────
+5:39:41 PM: ​
+5:39:41 PM:   Error message
+5:39:41 PM:   Command failed with exit code 2: npm run build (https://ntl.fyi/exit-code-2)
+5:39:41 PM: ​
+5:39:41 PM:   Error location
+5:39:41 PM:   In build.command from netlify.toml:
+5:39:41 PM:   npm run build
+5:39:41 PM: ​
+5:39:41 PM:   Resolved config
+5:39:41 PM:   build:
+5:39:41 PM:     base: /opt/build/repo/frontend
+5:39:41 PM:     command: npm run build
+5:39:41 PM:     commandOrigin: config
+5:39:41 PM:     environment:
+5:39:41 PM:       - VITE_SUPABASE_ANON_KEY
+5:39:41 PM:       - VITE_SUPABASE_URL
+5:39:41 PM:     publish: /opt/build/repo/frontend/dist
+5:39:41 PM:     publishOrigin: config
+5:39:41 PM:   redirects:
+5:39:41 PM:     - from: /*
+      status: 200
+      to: /index.html
+  redirectsOrigin: config
+5:39:41 PM: Build failed due to a user error: Build script returned non-zero exit code: 2
+5:39:41 PM: Failing build: Failed to build site
+5:39:42 PM: Finished processing build request in 18.012s
+5:39:41 PM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
+
+---
+
+_**Agent (default)**_
+
+<think><details><summary>Thought Process</summary>
+The Netlify build failed due to TypeScript compilation errors.</details></think>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: c:\DailyBalance_Project\frontend\src\pages\finance\CurrencyPicker.tsx</summary>
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2"><details>
+<summary>Tool use: **read_file_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (default)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: c:\DailyBalance_Project\frontend\src\pages\finance\currency-picker-context.tsx</summary>
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2"><details>
+<summary>Tool use: **read_file_v2**</summary>
+
+</details></tool-use>

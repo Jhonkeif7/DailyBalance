@@ -50,7 +50,6 @@ function CurrencyRow({
       value={currency}
       currencies={currencies}
       onChange={onCurrencyChange}
-      disabled={disabled}
     >
       <div className="rounded-2xl border border-border sm:rounded-full">
         <div className="flex flex-col sm:flex-row sm:items-stretch">

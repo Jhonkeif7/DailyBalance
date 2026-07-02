@@ -172,7 +172,6 @@ interface CurrencyPickerRowProps {
   value: string
   currencies: CurrencyInfo[]
   onChange: (code: string) => void
-  disabled?: boolean
   children: ReactNode
 }
 
@@ -181,7 +180,6 @@ function CurrencyPickerRow({
   value,
   currencies,
   onChange,
-  disabled,
   children,
 }: CurrencyPickerRowProps) {
   const ctx = useCurrencyPickerContext()
