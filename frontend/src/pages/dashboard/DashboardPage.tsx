@@ -143,35 +143,39 @@ function DashboardPage() {
 
     return (
         <PageContainer>
-            {/* Stats Grid - Mobile: 2 cols, Tablet: 2 cols, Desktop: 4 cols */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/* Stats Grid - Mobile: 2 cols compactos, Desktop: 4 cols */}
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
                 <StatCard
+                    compactOnMobile
                     title="Balance Total"
                     value={loading ? "—" : money(totalBalance)}
                     description={`En ${accounts.length} ${accounts.length === 1 ? "cuenta" : "cuentas"}`}
                     tone="primary"
-                    icon={<DollarSign className="w-full h-full" />}
+                    icon={<DollarSign className="h-full w-full" />}
                 />
                 <StatCard
+                    compactOnMobile
                     title="Gastos del Mes"
                     value={loading ? "—" : money(monthlyExpenses)}
                     description="Mes actual"
                     tone="destructive"
-                    icon={<TrendingDown className="w-full h-full" />}
+                    icon={<TrendingDown className="h-full w-full" />}
                 />
                 <StatCard
+                    compactOnMobile
                     title="Tareas Completadas"
                     value={loading ? "—" : String(completedTasks)}
                     description={`De ${tasks.length} ${tasks.length === 1 ? "tarea" : "tareas"}`}
                     tone="success"
-                    icon={<Target className="w-full h-full" />}
+                    icon={<Target className="h-full w-full" />}
                 />
                 <StatCard
+                    compactOnMobile
                     title="Productividad"
                     value={loading ? "—" : `${productivity}%`}
                     description="Promedio últimos 7 días"
                     tone="primary"
-                    icon={<Activity className="w-full h-full" />}
+                    icon={<Activity className="h-full w-full" />}
                 />
             </div>
 

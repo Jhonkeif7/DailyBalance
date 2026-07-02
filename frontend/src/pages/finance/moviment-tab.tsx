@@ -14,9 +14,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Plus, DollarSign, Pencil, Trash2, Search, X, Filter, ChevronLeft, ChevronRight } from "lucide-react"
+import { Plus, DollarSign, Pencil, Trash2, Search, X, Filter, ChevronLeft, ChevronRight, ArrowLeftRight } from "lucide-react"
 import { toast } from "sonner"
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog"
+import { ExchangeRateDialog } from "./ExchangeRateDialog"
 import type { Transaction, Category, Account } from "./currency-tab"
 import { formatNumber, formatDate, todayInput, resolveCategoryIcon } from "./finance-utils"
 
@@ -58,6 +59,7 @@ function MovimentTab({
   deleteTransaction,
 }: MovimentTabProps) {
   const [open, setOpen] = useState(false)
+  const [exchangeOpen, setExchangeOpen] = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -191,6 +193,10 @@ function MovimentTab({
     <div className="space-y-4">
       {/* Toolbar: buscar + filtros + nuevo */}
       <Card className="border-border/60">
+        <CardHeader>
+          <CardTitle>Movimientos</CardTitle>
+          <CardDescription>Registra ingresos, gastos o transferencias.</CardDescription>
+        </CardHeader>
         <CardContent className="p-3 sm:p-4">
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -278,6 +284,17 @@ function MovimentTab({
                   </SelectContent>
                 </Select>
 
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="col-span-2 h-8 gap-1.5 sm:col-span-1"
+                  onClick={() => setExchangeOpen(true)}
+                >
+                  <ArrowLeftRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  Tasa de cambio
+                </Button>
+
                 {hasActiveFilters && (
                   <Button
                     variant="ghost"
@@ -300,8 +317,7 @@ function MovimentTab({
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Movimientos Recientes</CardTitle>
-              <CardDescription>Historial de transacciones</CardDescription>
+              <CardTitle>Historial de movimientos</CardTitle>
             </div>
             <Badge variant="secondary" className="shrink-0">
               {filteredTransactions.length} de {transactions.length}
@@ -583,6 +599,8 @@ function MovimentTab({
         onConfirm={handleConfirmDelete}
         loading={deleting}
       />
+
+      <ExchangeRateDialog open={exchangeOpen} onOpenChange={setExchangeOpen} />
     </div>
   )
 }

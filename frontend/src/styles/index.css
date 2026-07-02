@@ -153,11 +153,11 @@
 }
 
 @layer components {
-  /* Visible en táctil; oculto hasta hover en dispositivos con puntero fino */
+  /* Móvil: siempre visible. PC con ratón: solo al hover del .group */
   .group-hover-actions {
     @apply opacity-100 transition-opacity focus-within:opacity-100;
   }
-  @media (hover: hover) and (pointer: fine) {
+  @media (min-width: 640px) and (hover: hover) and (pointer: fine) {
     .group-hover-actions {
       @apply opacity-0;
     }

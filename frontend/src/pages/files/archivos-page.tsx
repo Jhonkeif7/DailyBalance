@@ -364,39 +364,41 @@ function FileGridItem({
                 </div>
             </div>
             
-            {/* Menu button */}
-            <Button
-                variant="ghost"
-                size="sm"
-                className="absolute top-2 right-2 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => setShowMenu(!showMenu)}
-            >
-                <MoreVertical className="w-4 h-4" />
-            </Button>
-            
-            {/* Dropdown menu */}
-            {showMenu && (
-                <div className="absolute top-10 right-2 z-10 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[120px]">
-                    <button
-                        className="w-full px-3 py-2 text-sm text-left hover:bg-muted flex items-center gap-2"
-                        onClick={() => { onPreview(file); setShowMenu(false); }}
-                    >
-                        <Eye className="w-4 h-4" /> Ver
-                    </button>
-                    <button
-                        className="w-full px-3 py-2 text-sm text-left hover:bg-muted flex items-center gap-2"
-                        onClick={() => { onDownload(file); setShowMenu(false); }}
-                    >
-                        <Download className="w-4 h-4" /> Descargar
-                    </button>
-                    <button
-                        className="w-full px-3 py-2 text-sm text-left hover:bg-muted flex items-center gap-2 text-destructive"
-                        onClick={() => { onDelete(file.id); setShowMenu(false); }}
-                    >
-                        <Trash2 className="w-4 h-4" /> Eliminar
-                    </button>
-                </div>
-            )}
+            <div className="group-hover-actions absolute top-2 right-2 z-10">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setShowMenu(!showMenu)}
+                    aria-label="Opciones del archivo"
+                    aria-expanded={showMenu}
+                >
+                    <MoreVertical className="w-4 h-4" />
+                </Button>
+
+                {showMenu && (
+                    <div className="absolute right-0 top-8 z-20 min-w-[120px] rounded-lg border border-border bg-card py-1 shadow-lg">
+                        <button
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
+                            onClick={() => { onPreview(file); setShowMenu(false); }}
+                        >
+                            <Eye className="h-4 w-4" /> Ver
+                        </button>
+                        <button
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
+                            onClick={() => { onDownload(file); setShowMenu(false); }}
+                        >
+                            <Download className="h-4 w-4" /> Descargar
+                        </button>
+                        <button
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-destructive hover:bg-muted"
+                            onClick={() => { onDelete(file.id); setShowMenu(false); }}
+                        >
+                            <Trash2 className="h-4 w-4" /> Eliminar
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
