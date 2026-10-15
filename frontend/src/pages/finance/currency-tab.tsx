@@ -6,8 +6,8 @@ import AccountTab from "./account-tab"
 import BudgetTab from "./budget-tab"
 import CategoryTab from "./category-tab"
 import { formatCurrency } from "./finance-utils"
+import type { FinanceTotals, ExchangeRatesMap } from "./finance-calc"
 
-// Tipos unificados con la capa de servicio (Supabase).
 export type {
   Transaction,
   Category,
@@ -15,14 +15,8 @@ export type {
   Account,
   Budget,
 } from "@/services/finance.service"
+export type { FinanceTotals } from "./finance-calc"
 import type { Account, Category, Transaction, Budget } from "@/services/finance.service"
-
-export interface FinanceTotals {
-  totalBalance: number
-  monthlyIncome: number
-  monthlyExpenses: number
-  monthlySavings: number
-}
 
 interface CurrencyTabProps {
   accounts: Account[]
@@ -30,6 +24,7 @@ interface CurrencyTabProps {
   transactions: Transaction[]
   budgets: Budget[]
   totals: FinanceTotals
+  exchangeRates: ExchangeRatesMap | null
   upsertTransaction: (transaction: Transaction) => Promise<void>
   deleteTransaction: (id: string) => Promise<void>
   upsertAccount: (account: Account) => Promise<void>
@@ -49,12 +44,20 @@ const tabItems = [
   { value: "categories", label: "Categorías", icon: Tag },
 ]
 
+function formatKpi(amount: number, totals: FinanceTotals) {
+  const value = formatCurrency(amount, totals.baseCurrency)
+  if (!totals.hasMultipleCurrencies) return value
+  if (!totals.ratesReady) return `${value}*`
+  return value
+}
+
 function CurrencyTab({
   accounts,
   categories,
   transactions,
   budgets,
   totals,
+  exchangeRates,
   upsertTransaction,
   deleteTransaction,
   upsertAccount,
@@ -66,9 +69,15 @@ function CurrencyTab({
   getBudgetPercentage,
   getBudgetStatus,
 }: CurrencyTabProps) {
+  const multiNote =
+    totals.hasMultipleCurrencies && totals.ratesReady
+      ? `Convertido a ${totals.baseCurrency}`
+      : totals.hasMultipleCurrencies
+        ? "Sin tasa: totales parciales"
+        : "Mes actual · confirmados"
+
   return (
     <Tabs defaultValue="transactions" className="space-y-4">
-      {/* Tabs en la parte superior */}
       <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl bg-muted/60 p-1">
         {tabItems.map(({ value, label, icon: Icon }) => (
           <TabsTrigger
@@ -82,50 +91,70 @@ function CurrencyTab({
         ))}
       </TabsList>
 
-      {/* KPIs compactos persistentes */}
       <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
         <StatCard
           compact
           title="Balance Total"
-          value={formatCurrency(totals.totalBalance)}
+          value={formatKpi(totals.totalBalance, totals)}
+          description={multiNote}
           tone="primary"
           icon={<DollarSign className="h-full w-full" />}
         />
         <StatCard
           compact
-          title="Ingresos"
-          value={formatCurrency(totals.monthlyIncome)}
+          title="Ingresos del mes"
+          value={formatKpi(totals.monthlyIncome, totals)}
+          description={multiNote}
           tone="success"
           icon={<TrendingUp className="h-full w-full" />}
         />
         <StatCard
           compact
-          title="Gastos"
-          value={formatCurrency(totals.monthlyExpenses)}
+          title="Gastos del mes"
+          value={formatKpi(totals.monthlyExpenses, totals)}
+          description={multiNote}
           tone="destructive"
           icon={<TrendingDown className="h-full w-full" />}
         />
         <StatCard
           compact
-          title="Ahorro"
-          value={formatCurrency(totals.monthlySavings)}
+          title="Ahorro del mes"
+          value={formatKpi(totals.monthlySavings, totals)}
+          description={multiNote}
           tone={totals.monthlySavings >= 0 ? "success" : "destructive"}
           icon={<PiggyBank className="h-full w-full" />}
         />
       </div>
 
-      {/* Movimientos */}
+      {totals.hasMultipleCurrencies && totals.byCurrency.length > 1 && (
+        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+          {totals.byCurrency.map((row) => (
+            <span
+              key={row.currency}
+              className="rounded-md border border-border/60 bg-muted/40 px-2 py-1"
+              style={{ fontVariantNumeric: "tabular-nums" }}
+            >
+              {row.currency}: {formatCurrency(row.balance, row.currency)}
+              {" · "}
+              +{formatCurrency(row.income, row.currency)}
+              {" / −"}
+              {formatCurrency(row.expenses, row.currency)}
+            </span>
+          ))}
+        </div>
+      )}
+
       <TabsContent value="transactions" className="space-y-4">
         <MovimentTab
           accounts={accounts}
           categories={categories}
           transactions={transactions}
+          exchangeRates={exchangeRates}
           upsertTransaction={upsertTransaction}
           deleteTransaction={deleteTransaction}
         />
       </TabsContent>
 
-      {/* Cuentas */}
       <TabsContent value="accounts" className="space-y-4">
         <AccountTab
           accounts={accounts}
@@ -134,11 +163,11 @@ function CurrencyTab({
         />
       </TabsContent>
 
-      {/* Presupuestos */}
       <TabsContent value="budgets" className="space-y-4">
         <BudgetTab
           categories={categories}
           budgets={budgets}
+          baseCurrency={totals.baseCurrency}
           upsertBudget={upsertBudget}
           deleteBudget={deleteBudget}
           getBudgetPercentage={getBudgetPercentage}
@@ -146,7 +175,6 @@ function CurrencyTab({
         />
       </TabsContent>
 
-      {/* Categorías */}
       <TabsContent value="categories" className="space-y-4">
         <CategoryTab
           categories={categories}

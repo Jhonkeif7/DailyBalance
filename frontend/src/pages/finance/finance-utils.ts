@@ -48,11 +48,19 @@ const accountTypeIcons: Record<string, LucideIcon> = {
 export const resolveAccountIcon = (type?: string | null): LucideIcon =>
   accountTypeIcons[type ?? ""] ?? Landmark
 
-export const formatCurrency = (amount: number, currency = "USD") =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-  }).format(amount)
+export const formatCurrency = (amount: number, currency = "USD") => {
+  const code = (currency || "USD").toUpperCase()
+  try {
+    return new Intl.NumberFormat("es-DO", {
+      style: "currency",
+      currency: code,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount)
+  } catch {
+    return `${formatNumber(amount)} ${code}`
+  }
+}
 
 export const formatNumber = (amount: number) =>
   new Intl.NumberFormat("en-US", {
@@ -60,14 +68,29 @@ export const formatNumber = (amount: number) =>
     maximumFractionDigits: 2,
   }).format(amount)
 
+/** Parsea YYYY-MM-DD como fecha local (evita el desfase UTC). */
+export const parseLocalDate = (date: string) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(date)
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  return new Date(date)
+}
+
 export const formatDate = (date: string) =>
   new Intl.DateTimeFormat("es-ES", {
     day: "numeric",
     month: "long",
     year: "numeric",
-  }).format(new Date(date))
+  }).format(parseLocalDate(date))
 
-export const todayInput = () => new Date().toISOString().split("T")[0]
+/** Fecha de hoy en zona local, formato YYYY-MM-DD. */
+export const todayInput = () => {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+/** Mes actual en zona local, formato YYYY-MM. */
+export const currentMonth = () => todayInput().slice(0, 7)
 
 export const newId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto

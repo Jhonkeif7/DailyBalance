@@ -16,7 +16,7 @@ import { Pencil, Trash2, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog"
 import type { Account } from "./currency-tab"
-import { resolveAccountIcon } from "./finance-utils"
+import { formatCurrency, resolveAccountIcon } from "./finance-utils"
 
 interface AccountTabProps {
   accounts: Account[]
@@ -165,7 +165,7 @@ function AccountTab({ accounts, upsertAccount, deleteAccount }: AccountTabProps)
                       className={`text-2xl font-bold ${account.balance >= 0 ? "text-success" : "text-destructive"}`}
                       style={{ fontVariantNumeric: "tabular-nums" }}
                     >
-                      ${Math.abs(account.balance).toLocaleString("en-US", { minimumFractionDigits: 2 })} {account.currency}
+                      {formatCurrency(account.balance, account.currency)}
                     </p>
                   </div>
                 </CardContent>
@@ -225,7 +225,7 @@ function AccountTab({ accounts, upsertAccount, deleteAccount }: AccountTabProps)
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="account-balance">Balance actual</Label>
+              <Label htmlFor="account-balance">Saldo inicial</Label>
               <Input
                 id="account-balance"
                 type="number"
@@ -235,6 +235,9 @@ function AccountTab({ accounts, upsertAccount, deleteAccount }: AccountTabProps)
                 onChange={(e) => setForm({ ...form, balance: e.target.value })}
                 autoComplete="off"
               />
+              <p className="text-xs text-muted-foreground">
+                Base de la cuenta. No uses aquí el saldo disponible (se recalcula con movimientos).
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -244,11 +247,11 @@ function AccountTab({ accounts, upsertAccount, deleteAccount }: AccountTabProps)
                 type="text"
                 readOnly
                 tabIndex={-1}
-                value={`${availableBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${form.currency || "USD"}`}
+                value={formatCurrency(availableBalance, form.currency || "USD")}
                 className="bg-muted/40 text-muted-foreground"
               />
               <p className="text-xs text-muted-foreground">
-                Balance actual ajustado con tus movimientos confirmados.
+                Saldo inicial + movimientos confirmados (las transferencias entre tus cuentas se compensan).
               </p>
             </div>
           </div>

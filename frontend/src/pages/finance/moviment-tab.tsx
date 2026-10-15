@@ -18,13 +18,17 @@ import { Plus, DollarSign, Pencil, Trash2, Search, X, Filter, ChevronLeft, Chevr
 import { toast } from "sonner"
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog"
 import { ExchangeRateDialog } from "./ExchangeRateDialog"
+import { convertCurrency, formatConvertedAmount } from "@/services/exchange-rate.service"
 import type { Transaction, Category, Account } from "./currency-tab"
-import { formatNumber, formatDate, todayInput, resolveCategoryIcon } from "./finance-utils"
+import type { ExchangeRatesMap } from "./finance-calc"
+import { accountCurrency } from "./finance-calc"
+import { formatDate, todayInput, resolveCategoryIcon, formatCurrency } from "./finance-utils"
 
 interface MovimentTabProps {
   accounts: Account[]
   categories: Category[]
   transactions: Transaction[]
+  exchangeRates: ExchangeRatesMap | null
   upsertTransaction: (transaction: Transaction) => Promise<void>
   deleteTransaction: (id: string) => Promise<void>
 }
@@ -33,28 +37,45 @@ interface TransactionForm {
   type: "income" | "expense" | "transfer"
   amount: string
   categoryId: string
+  subcategoryId: string
   accountId: string
+  transferAccountId: string
   paymentMethod: "card" | "cash" | "transfer"
   date: string
   description: string
-  status: "confirmed" | "pending"
+  status: "confirmed" | "pending" | "cancelled"
 }
 
 const emptyForm: TransactionForm = {
   type: "expense",
   amount: "",
   categoryId: "",
+  subcategoryId: "",
   accountId: "",
+  transferAccountId: "",
   paymentMethod: "card",
   date: todayInput(),
   description: "",
   status: "confirmed",
 }
 
+function amountClass(type: Transaction["type"]) {
+  if (type === "income") return "text-success"
+  if (type === "transfer") return "text-foreground"
+  return "text-destructive"
+}
+
+function amountPrefix(type: Transaction["type"]) {
+  if (type === "income") return "+"
+  if (type === "transfer") return ""
+  return "-"
+}
+
 function MovimentTab({
   accounts,
   categories,
   transactions,
+  exchangeRates,
   upsertTransaction,
   deleteTransaction,
 }: MovimentTabProps) {
@@ -65,12 +86,36 @@ function MovimentTab({
   const [deleting, setDeleting] = useState(false)
   const [form, setForm] = useState<TransactionForm>(emptyForm)
 
-  // Filtros
   const [search, setSearch] = useState("")
   const [filterType, setFilterType] = useState("all")
   const [filterCategory, setFilterCategory] = useState("all")
   const [filterAccount, setFilterAccount] = useState("all")
   const [filterStatus, setFilterStatus] = useState("all")
+
+  const isTransfer = form.type === "transfer"
+
+  const compatibleCategories = useMemo(() => {
+    if (form.type === "transfer") return []
+    return categories.filter(
+      (c) => c.type === form.type || c.type === "both"
+    )
+  }, [categories, form.type])
+
+  const selectedCategory = categories.find((c) => c.id === form.categoryId)
+  const subcategories = selectedCategory?.subcategories ?? []
+
+  const sourceAccount = accounts.find((a) => a.id === form.accountId)
+  const destAccount = accounts.find((a) => a.id === form.transferAccountId)
+  const sourceCurrency = (sourceAccount?.currency || "USD").toUpperCase()
+  const destCurrency = (destAccount?.currency || "USD").toUpperCase()
+  const crossCurrency = isTransfer && !!form.accountId && !!form.transferAccountId && sourceCurrency !== destCurrency
+
+  const previewDestAmount = useMemo(() => {
+    const amount = parseFloat(form.amount)
+    if (!crossCurrency || !Number.isFinite(amount) || !exchangeRates) return null
+    const converted = convertCurrency(amount, sourceCurrency, destCurrency, exchangeRates)
+    return Number.isFinite(converted) ? converted : null
+  }, [crossCurrency, form.amount, exchangeRates, sourceCurrency, destCurrency])
 
   const hasActiveFilters =
     search.trim() !== "" ||
@@ -92,32 +137,37 @@ function MovimentTab({
     return transactions.filter((t) => {
       if (filterType !== "all" && t.type !== filterType) return false
       if (filterCategory !== "all" && t.categoryId !== filterCategory) return false
-      if (filterAccount !== "all" && t.accountId !== filterAccount) return false
+      if (
+        filterAccount !== "all" &&
+        t.accountId !== filterAccount &&
+        t.transferAccountId !== filterAccount
+      ) {
+        return false
+      }
       if (filterStatus !== "all" && t.status !== filterStatus) return false
       if (q) {
         const accountName = accounts.find((a) => a.id === t.accountId)?.name ?? ""
+        const destName = accounts.find((a) => a.id === t.transferAccountId)?.name ?? ""
         const categoryName = categories.find((c) => c.id === t.categoryId)?.name ?? ""
         return (
           t.description.toLowerCase().includes(q) ||
           categoryName.toLowerCase().includes(q) ||
-          accountName.toLowerCase().includes(q)
+          accountName.toLowerCase().includes(q) ||
+          destName.toLowerCase().includes(q)
         )
       }
       return true
     })
   }, [transactions, filterType, filterCategory, filterAccount, filterStatus, search, accounts, categories])
 
-  // Paginación (10 por página)
   const PAGE_SIZE = 10
   const [page, setPage] = useState(1)
   const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE))
 
-  // Reiniciar a la primera página cuando cambian filtros/datos
   useEffect(() => {
     setPage(1)
   }, [filterType, filterCategory, filterAccount, filterStatus, search])
 
-  // Si el total de páginas se reduce (ej. tras eliminar), no quedar fuera de rango
   useEffect(() => {
     if (page > totalPages) setPage(totalPages)
   }, [page, totalPages])
@@ -139,31 +189,71 @@ function MovimentTab({
       type: transaction.type,
       amount: String(transaction.amount),
       categoryId: transaction.categoryId ?? "",
+      subcategoryId: transaction.subcategoryId ?? "",
       accountId: transaction.accountId,
+      transferAccountId: transaction.transferAccountId ?? "",
       paymentMethod: transaction.paymentMethod,
       date: transaction.date,
       description: transaction.description,
-      status: transaction.status === "cancelled" ? "pending" : transaction.status,
+      status: transaction.status,
     })
     setOpen(true)
   }
 
+  const handleTypeChange = (value: TransactionForm["type"]) => {
+    setForm((prev) => ({
+      ...prev,
+      type: value,
+      categoryId: value === "transfer" ? "" : prev.categoryId,
+      subcategoryId: value === "transfer" ? "" : prev.subcategoryId,
+      transferAccountId: value === "transfer" ? prev.transferAccountId : "",
+      paymentMethod: value === "transfer" ? "transfer" : prev.paymentMethod === "transfer" ? "card" : prev.paymentMethod,
+    }))
+  }
+
   const handleSave = async () => {
-    if (!form.amount || !form.categoryId || !form.accountId) {
-      toast.error("Completa monto, categoría y cuenta")
+    const amount = parseFloat(form.amount)
+    if (!form.amount || !Number.isFinite(amount) || amount <= 0) {
+      toast.error("Ingresa un monto válido")
       return
     }
+    if (!form.accountId) {
+      toast.error("Selecciona una cuenta")
+      return
+    }
+
+    if (form.type === "transfer") {
+      if (!form.transferAccountId) {
+        toast.error("Selecciona la cuenta destino")
+        return
+      }
+      if (form.transferAccountId === form.accountId) {
+        toast.error("Origen y destino deben ser cuentas distintas")
+        return
+      }
+      if (crossCurrency && !exchangeRates) {
+        toast.error("No hay tasas de cambio para transferir entre monedas distintas")
+        return
+      }
+    } else if (!form.categoryId) {
+      toast.error("Selecciona una categoría")
+      return
+    }
+
     const transaction: Transaction = {
       id: editing?.id ?? "",
       type: form.type,
-      amount: parseFloat(form.amount),
-      categoryId: form.categoryId,
+      amount,
+      categoryId: form.type === "transfer" ? null : form.categoryId,
+      subcategoryId: form.type === "transfer" ? null : form.subcategoryId || null,
       accountId: form.accountId,
-      paymentMethod: form.paymentMethod,
+      transferAccountId: form.type === "transfer" ? form.transferAccountId : null,
+      paymentMethod: form.type === "transfer" ? "transfer" : form.paymentMethod,
       date: form.date,
       description: form.description,
       status: form.status,
     }
+
     try {
       await upsertTransaction(transaction)
       toast.success(editing ? "Movimiento actualizado" : "Movimiento agregado")
@@ -191,11 +281,12 @@ function MovimentTab({
 
   return (
     <div className="space-y-4">
-      {/* Toolbar: buscar + filtros + nuevo */}
       <Card className="border-border/60">
         <CardHeader>
           <CardTitle>Movimientos</CardTitle>
-          <CardDescription>Registra ingresos, gastos o transferencias.</CardDescription>
+          <CardDescription>
+            Ingresos y gastos reales. Las transferencias entre tus cuentas no cuentan como gasto.
+          </CardDescription>
         </CardHeader>
         <CardContent className="p-3 sm:p-4">
           <div className="flex flex-col gap-3">
@@ -281,6 +372,7 @@ function MovimentTab({
                     <SelectItem value="all">Estados</SelectItem>
                     <SelectItem value="confirmed">Confirmado</SelectItem>
                     <SelectItem value="pending">Pendiente</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -312,7 +404,6 @@ function MovimentTab({
         </CardContent>
       </Card>
 
-      {/* Lista de movimientos */}
       <Card className="border-border/60">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -337,9 +428,19 @@ function MovimentTab({
             ) : (
               paginatedTransactions.map((transaction) => {
                 const account = accounts.find((a) => a.id === transaction.accountId)
+                const dest = accounts.find((a) => a.id === transaction.transferAccountId)
                 const category = categories.find((c) => c.id === transaction.categoryId)
-                const Icon = category ? resolveCategoryIcon(category.icon) : DollarSign
-                const categoryName = category?.name ?? "Sin categoría"
+                const Icon =
+                  transaction.type === "transfer"
+                    ? ArrowLeftRight
+                    : category
+                      ? resolveCategoryIcon(category.icon)
+                      : DollarSign
+                const title =
+                  transaction.type === "transfer"
+                    ? `${account?.name ?? "Origen"} → ${dest?.name ?? "Destino"}`
+                    : (category?.name ?? "Sin categoría")
+                const currency = accountCurrency(accounts, transaction.accountId)
 
                 return (
                   <div
@@ -347,15 +448,29 @@ function MovimentTab({
                     className="group flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-card/30 p-3 transition-colors hover:bg-muted/40"
                   >
                     <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <div className={`shrink-0 rounded-full p-2.5 ${category?.color || "bg-muted"}`}>
-                        <Icon className="h-4 w-4 text-white" aria-hidden="true" />
+                      <div
+                        className={`shrink-0 rounded-full p-2.5 ${
+                          transaction.type === "transfer"
+                            ? "bg-muted"
+                            : category?.color || "bg-muted"
+                        }`}
+                      >
+                        <Icon
+                          className={`h-4 w-4 ${transaction.type === "transfer" ? "text-foreground" : "text-white"}`}
+                          aria-hidden="true"
+                        />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <p className="truncate text-sm font-medium">{categoryName}</p>
+                          <p className="truncate text-sm font-medium">{title}</p>
                           {transaction.status === "pending" && (
                             <Badge variant="outline" className="shrink-0 text-[10px]">
                               Pendiente
+                            </Badge>
+                          )}
+                          {transaction.status === "cancelled" && (
+                            <Badge variant="outline" className="shrink-0 text-[10px]">
+                              Cancelado
                             </Badge>
                           )}
                         </div>
@@ -363,7 +478,8 @@ function MovimentTab({
                           {transaction.description || "Sin descripción"}
                         </p>
                         <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                          {formatDate(transaction.date)} • {account?.name ?? "Sin cuenta"}
+                          {formatDate(transaction.date)}
+                          {transaction.type !== "transfer" ? ` • ${account?.name ?? "Sin cuenta"}` : null}
                         </p>
                       </div>
                     </div>
@@ -371,10 +487,11 @@ function MovimentTab({
                     <div className="flex shrink-0 items-center gap-2">
                       <div className="text-right">
                         <p
-                          className={`text-base font-bold ${transaction.type === "income" ? "text-success" : "text-destructive"}`}
+                          className={`text-base font-bold ${amountClass(transaction.type)}`}
                           style={{ fontVariantNumeric: "tabular-nums" }}
                         >
-                          {transaction.type === "income" ? "+" : "-"}${formatNumber(transaction.amount)}
+                          {amountPrefix(transaction.type)}
+                          {formatCurrency(transaction.amount, currency)}
                         </p>
                         <p className="text-[10px] text-muted-foreground">
                           {transaction.type === "income"
@@ -389,7 +506,7 @@ function MovimentTab({
                           variant="ghost"
                           size="icon-sm"
                           onClick={() => openEdit(transaction)}
-                          aria-label={`Editar ${categoryName}`}
+                          aria-label={`Editar ${title}`}
                         >
                           <Pencil className="h-4 w-4" aria-hidden="true" />
                         </Button>
@@ -398,7 +515,7 @@ function MovimentTab({
                           size="icon-sm"
                           onClick={() => setDeleteTarget(transaction)}
                           className="text-muted-foreground hover:text-destructive"
-                          aria-label={`Eliminar ${categoryName}`}
+                          aria-label={`Eliminar ${title}`}
                         >
                           <Trash2 className="h-4 w-4" aria-hidden="true" />
                         </Button>
@@ -410,7 +527,6 @@ function MovimentTab({
             )}
           </div>
 
-          {/* Paginación: 10 por página */}
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3">
               <p className="text-xs text-muted-foreground">
@@ -455,31 +571,36 @@ function MovimentTab({
         </CardContent>
       </Card>
 
-      {/* Diálogo crear / editar */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle>{editing ? "Editar Movimiento" : "Nuevo Movimiento"}</DialogTitle>
-            <DialogDescription>Registra ingresos, gastos o transferencias.</DialogDescription>
+            <DialogDescription>
+              {isTransfer
+                ? "Mueve dinero entre tus cuentas. No afecta ingresos ni gastos."
+                : "Registra un ingreso o gasto real."}
+            </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-2 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="type">Tipo</Label>
-              <Select value={form.type} onValueChange={(value) => setForm({ ...form, type: value as TransactionForm["type"] })}>
+              <Select value={form.type} onValueChange={(value) => handleTypeChange(value as TransactionForm["type"])}>
                 <SelectTrigger id="type" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="income">Ingreso</SelectItem>
                   <SelectItem value="expense">Gasto</SelectItem>
-                  <SelectItem value="transfer">Transferencia</SelectItem>
+                  <SelectItem value="transfer">Transferencia (entre mis cuentas)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="amount">Monto</Label>
+              <Label htmlFor="amount">
+                Monto{sourceAccount ? ` (${sourceCurrency})` : ""}
+              </Label>
               <Input
                 id="amount"
                 type="number"
@@ -510,55 +631,162 @@ function MovimentTab({
                 <SelectContent>
                   <SelectItem value="confirmed">Confirmado</SelectItem>
                   <SelectItem value="pending">Pendiente</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="category">Categoría</Label>
-              <Select value={form.categoryId} onValueChange={(value) => setForm({ ...form, categoryId: value })}>
-                <SelectTrigger id="category" className="w-full">
-                  <SelectValue placeholder="Seleccionar…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {!isTransfer && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="category">Categoría</Label>
+                  <Select
+                    value={form.categoryId}
+                    onValueChange={(value) => setForm({ ...form, categoryId: value, subcategoryId: "" })}
+                  >
+                    <SelectTrigger id="category" className="w-full">
+                      <SelectValue placeholder="Seleccionar…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {compatibleCategories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="account">Cuenta</Label>
-              <Select value={form.accountId} onValueChange={(value) => setForm({ ...form, accountId: value })}>
-                <SelectTrigger id="account" className="w-full">
-                  <SelectValue placeholder="Seleccionar…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {accounts.map((acc) => (
-                    <SelectItem key={acc.id} value={acc.id}>
-                      {acc.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                {subcategories.length > 0 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="subcategory">Subcategoría</Label>
+                    <Select
+                      value={form.subcategoryId || "__none__"}
+                      onValueChange={(value) =>
+                        setForm({ ...form, subcategoryId: value === "__none__" ? "" : value })
+                      }
+                    >
+                      <SelectTrigger id="subcategory" className="w-full">
+                        <SelectValue placeholder="Opcional…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Sin subcategoría</SelectItem>
+                        {subcategories.map((sub) => (
+                          <SelectItem key={sub.id} value={sub.id}>
+                            {sub.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
-            <div className="space-y-2">
-              <Label htmlFor="paymentMethod">Método de pago</Label>
-              <Select value={form.paymentMethod} onValueChange={(value) => setForm({ ...form, paymentMethod: value as TransactionForm["paymentMethod"] })}>
-                <SelectTrigger id="paymentMethod" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="card">Tarjeta</SelectItem>
-                  <SelectItem value="cash">Efectivo</SelectItem>
-                  <SelectItem value="transfer">Transferencia</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="account">Cuenta</Label>
+                  <Select value={form.accountId} onValueChange={(value) => setForm({ ...form, accountId: value })}>
+                    <SelectTrigger id="account" className="w-full">
+                      <SelectValue placeholder="Seleccionar…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((acc) => (
+                        <SelectItem key={acc.id} value={acc.id}>
+                          {acc.name} ({acc.currency})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="paymentMethod">Método de pago</Label>
+                  <Select
+                    value={form.paymentMethod}
+                    onValueChange={(value) =>
+                      setForm({ ...form, paymentMethod: value as TransactionForm["paymentMethod"] })
+                    }
+                  >
+                    <SelectTrigger id="paymentMethod" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="card">Tarjeta</SelectItem>
+                      <SelectItem value="cash">Efectivo (método)</SelectItem>
+                      <SelectItem value="transfer">Transferencia a terceros</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground">
+                    El método no mueve dinero entre tus cuentas. Para eso usa tipo Transferencia.
+                  </p>
+                </div>
+              </>
+            )}
+
+            {isTransfer && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="from-account">Cuenta origen</Label>
+                  <Select
+                    value={form.accountId}
+                    onValueChange={(value) =>
+                      setForm({
+                        ...form,
+                        accountId: value,
+                        transferAccountId: form.transferAccountId === value ? "" : form.transferAccountId,
+                      })
+                    }
+                  >
+                    <SelectTrigger id="from-account" className="w-full">
+                      <SelectValue placeholder="Desde…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((acc) => (
+                        <SelectItem key={acc.id} value={acc.id}>
+                          {acc.name} ({acc.currency})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="to-account">Cuenta destino</Label>
+                  <Select
+                    value={form.transferAccountId}
+                    onValueChange={(value) => setForm({ ...form, transferAccountId: value })}
+                  >
+                    <SelectTrigger id="to-account" className="w-full">
+                      <SelectValue placeholder="Hacia…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts
+                        .filter((acc) => acc.id !== form.accountId)
+                        .map((acc) => (
+                          <SelectItem key={acc.id} value={acc.id}>
+                            {acc.name} ({acc.currency})
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {crossCurrency && (
+                  <div className="space-y-1 sm:col-span-2 rounded-md border border-border/60 bg-muted/30 p-3 text-sm">
+                    <p className="font-medium">Conversión {sourceCurrency} → {destCurrency}</p>
+                    {previewDestAmount != null ? (
+                      <p className="text-muted-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
+                        Destino recibirá aprox.{" "}
+                        {formatCurrency(previewDestAmount, destCurrency)}{" "}
+                        (tasa ≈ {formatConvertedAmount(previewDestAmount / (parseFloat(form.amount) || 1))})
+                      </p>
+                    ) : (
+                      <p className="text-destructive text-xs">
+                        No se pudo obtener la tasa. Abre el conversor o reintenta más tarde.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
 
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="description">Descripción / Notas</Label>

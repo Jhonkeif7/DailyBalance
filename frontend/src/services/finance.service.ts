@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase"
  *
  * Tablas: finance_accounts, finance_categories, finance_subcategories,
  *         finance_transactions, finance_budgets.
- * Vista:  v_budget_usage  (el "spent" de presupuestos NO se guarda; se lee aquí).
+ * Vista:  v_budget_usage  (referencia; el spent se recalcula en cliente).
  *
  * ESQUEMA (columnas reales relevantes):
  *  finance_accounts:      id, user_id, name, type, current_balance, initial_balance,
@@ -17,13 +17,17 @@ import { supabase } from "@/lib/supabase"
  *                         date (date), description, status ('confirmed'|'pending'|'cancelled'),
  *                         account_id, transfer_account_id, created_at
  *  finance_budgets:       id, user_id, category_id, name, amount, period, created_at
- *  v_budget_usage:        budget_id, spent   (gasto agregado por presupuesto)
+ *
+ * Notas:
+ *  - type=transfer mueve dinero entre account_id y transfer_account_id; NO es gasto.
+ *  - payment_method=transfer es solo etiqueta de pago a terceros.
+ *  - amount de una transferencia está en la moneda de account_id (origen).
+ *  - current_balance se sincroniza desde el cliente; la UI deriva saldo = initial + movimientos.
  *
  * RLS: filtra por auth.uid() = user_id. El user_id se envía explícitamente en los
  * inserts (las tablas no tienen default auth.uid()).
  */
 
-// Devuelve el id del usuario autenticado o lanza si no hay sesión.
 async function requireUserId(): Promise<string> {
   const { data, error } = await supabase.auth.getUser()
   if (error) throw error
@@ -82,15 +86,12 @@ export interface Budget {
   name: string
   categoryId: string | null
   amount: number
-  period: string // mes en formato "YYYY-MM" (la BD lo guarda en la columna month)
+  period: string // mes en formato "YYYY-MM"
   spent: number
   alertPercentage?: number
   isActive?: boolean
 }
 
-// ----- Cuentas -----
-
-// Alias balance:current_balance para que la UI siga usando "balance".
 const ACCOUNT_SELECT =
   "id, name, type, balance:current_balance, initial_balance, currency, icon, color"
 
@@ -118,7 +119,6 @@ export async function getAccounts(): Promise<Account[]> {
 export async function upsertAccount(account: Partial<Account> & { id?: string }): Promise<Account> {
   let data: any
   if (account.id) {
-    // Update: solo enviamos los campos provistos; balance -> current_balance.
     const patch: Record<string, unknown> = {}
     if (account.name !== undefined) patch.name = account.name
     if (account.type !== undefined) patch.type = account.type
@@ -145,7 +145,7 @@ export async function upsertAccount(account: Partial<Account> & { id?: string })
         type: account.type,
         currency: account.currency || "USD",
         initial_balance: account.initialBalance ?? account.balance ?? 0,
-        current_balance: account.balance ?? 0,
+        current_balance: account.balance ?? account.initialBalance ?? 0,
         icon: account.icon || null,
         color: account.color || null,
         position: 0,
@@ -163,8 +163,6 @@ export async function deleteAccount(id: string): Promise<void> {
   const { error } = await supabase.from("finance_accounts").delete().eq("id", id)
   if (error) throw error
 }
-
-// ----- Categorías + Subcategorías -----
 
 export async function getCategories(): Promise<Category[]> {
   const [{ data: cats, error: e1 }, { data: subs, error: e2 }] = await Promise.all([
@@ -243,9 +241,6 @@ export async function deleteSubcategory(id: string): Promise<void> {
   if (error) throw error
 }
 
-// ----- Movimientos -----
-
-// Alias date:transaction_date para que la UI siga usando "date".
 const TX_SELECT =
   "id, type, amount, category_id, subcategory_id, payment_method, date:transaction_date, description, status, account_id, transfer_account_id"
 
@@ -285,7 +280,7 @@ export async function upsertTransaction(
     description: tx.description,
     status: tx.status,
     account_id: tx.accountId,
-    transfer_account_id: tx.transferAccountId ?? null,
+    transfer_account_id: tx.type === "transfer" ? (tx.transferAccountId ?? null) : null,
   }
   const query = tx.id
     ? supabase.from("finance_transactions").update(payload).eq("id", tx.id)
@@ -300,13 +295,8 @@ export async function deleteTransaction(id: string): Promise<void> {
   if (error) throw error
 }
 
-// ----- Presupuestos (spent viene de v_budget_usage) -----
-
-// Normaliza un valor "month" de la BD a "YYYY-MM" para el formulario.
 const monthToPeriod = (month: unknown): string => String(month ?? "").slice(0, 7)
 
-// Normaliza el "period" del formulario ("YYYY-MM") a un valor de columna month.
-// Si la columna month fuese de tipo date, "YYYY-MM-01" es el primer día del mes.
 const periodToMonth = (period?: string): string | null => {
   if (!period) return null
   return /^\d{4}-\d{2}$/.test(period) ? `${period}-01` : period
@@ -323,7 +313,8 @@ export async function getBudgets(): Promise<Budget[]> {
     supabase.from("v_budget_usage").select("budget_id, spent"),
   ])
   if (e1) throw e1
-  if (e2) throw e2
+  // usage es opcional: el spent se recalcula en cliente; no fallar si la vista falla.
+  if (e2) console.warn("v_budget_usage no disponible:", e2.message)
   const spentByBudget = new Map<string, number>()
   for (const u of usage ?? []) {
     spentByBudget.set((u as any).budget_id, Number((u as any).spent ?? 0))
@@ -346,7 +337,6 @@ export async function getBudgets(): Promise<Budget[]> {
 export async function upsertBudget(
   budget: Partial<Omit<Budget, "spent">> & { id?: string }
 ): Promise<void> {
-  // No se envían name/amount/period (no existen). spent lo calcula v_budget_usage.
   const payload = {
     category_id: budget.categoryId ?? null,
     month: periodToMonth(budget.period),

@@ -4,13 +4,17 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { StatCard } from "@/components/ui/StatCard";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { TrendingUp, TrendingDown, Activity, DollarSign, Target } from "lucide-react";
+import { TrendingUp, TrendingDown, Activity, DollarSign, Target, ArrowLeftRight } from "lucide-react";
 import * as financeService from "@/services/finance.service";
 import * as tasksService from "@/services/tasks.service";
 import * as reportsService from "@/services/reports.service";
-
-const money = (n: number) =>
-    n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+import { getUsdExchangeRates } from "@/services/exchange-rate.service";
+import {
+    computeFinanceTotals,
+    deriveAccountBalances,
+    type ExchangeRatesMap,
+} from "@/pages/finance/finance-calc";
+import { formatCurrency, todayInput } from "@/pages/finance/finance-utils";
 
 // Fecha local en formato YYYY-MM-DD.
 const toLocalDay = (d: Date) => {
@@ -18,7 +22,7 @@ const toLocalDay = (d: Date) => {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
-const todayStr = toLocalDay(new Date());
+const todayStr = todayInput();
 
 function DashboardPage() {
     const [accounts, setAccounts] = useState<financeService.Account[]>([]);
@@ -26,18 +30,20 @@ function DashboardPage() {
     const [categories, setCategories] = useState<financeService.Category[]>([]);
     const [tasks, setTasks] = useState<tasksService.Task[]>([]);
     const [daily, setDaily] = useState<reportsService.DailyProductivity[]>([]);
+    const [rates, setRates] = useState<ExchangeRatesMap | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         let active = true;
         (async () => {
             try {
-                const [acc, txs, cats, ts, prod] = await Promise.all([
+                const [acc, txs, cats, ts, prod, rateData] = await Promise.all([
                     financeService.getAccounts(),
                     financeService.getTransactions(),
                     financeService.getCategories(),
                     tasksService.getTasks(),
                     reportsService.getDailyProductivity(),
+                    getUsdExchangeRates().catch(() => null),
                 ]);
                 if (!active) return;
                 setAccounts(acc);
@@ -45,6 +51,7 @@ function DashboardPage() {
                 setCategories(cats);
                 setTasks(ts);
                 setDaily(prod);
+                if (rateData) setRates(rateData.rates);
             } catch (err) {
                 console.error(err);
                 toast.error("No se pudieron cargar los datos del dashboard");
@@ -62,33 +69,24 @@ function DashboardPage() {
         return (id: string | null | undefined) => (id ? map.get(id) ?? "Sin categoría" : "Sin categoría");
     }, [categories]);
 
-    // Balance total = saldo inicial de cada cuenta + movimientos confirmados.
-    const totalBalance = useMemo(() => {
-        const net = new Map<string, number>();
-        const add = (id: string | null | undefined, delta: number) => {
-            if (!id) return;
-            net.set(id, (net.get(id) ?? 0) + delta);
-        };
-        for (const t of transactions) {
-            if (t.status !== "confirmed") continue;
-            if (t.type === "income") add(t.accountId, t.amount);
-            else if (t.type === "expense") add(t.accountId, -t.amount);
-            else if (t.type === "transfer") {
-                add(t.accountId, -t.amount);
-                add(t.transferAccountId, t.amount);
-            }
-        }
-        return accounts.reduce((sum, a) => sum + (a.initialBalance ?? a.balance) + (net.get(a.id) ?? 0), 0);
-    }, [accounts, transactions]);
+    const accountName = useMemo(() => {
+        const map = new Map(accounts.map((a) => [a.id, a.name]));
+        return (id: string | null | undefined) => (id ? map.get(id) ?? "Cuenta" : "Cuenta");
+    }, [accounts]);
 
-    // Gastos del mes actual (movimientos tipo gasto).
-    const monthlyExpenses = useMemo(() => {
-        const month = todayStr.slice(0, 7);
-        return transactions
-            .filter((t) => t.type === "expense" && (t.date ?? "").slice(0, 7) === month)
-            .reduce((sum, t) => sum + t.amount, 0);
-    }, [transactions]);
+    const accountsView = useMemo(
+        () => deriveAccountBalances(accounts, transactions, rates),
+        [accounts, transactions, rates]
+    );
 
+    const totals = useMemo(
+        () => computeFinanceTotals(accountsView, transactions, rates),
+        [accountsView, transactions, rates]
+    );
+
+    const totalBalance = totals.totalBalance;
+    const monthlyExpenses = totals.monthlyExpenses;
+    const money = (n: number) => formatCurrency(n, totals.baseCurrency);
     const completedTasks = useMemo(() => tasks.filter((t) => t.completed).length, [tasks]);
 
     // Productividad: % completado promedio de los días con actividad (últimos 7).
@@ -149,7 +147,11 @@ function DashboardPage() {
                     compactOnMobile
                     title="Balance Total"
                     value={loading ? "—" : money(totalBalance)}
-                    description={`En ${accounts.length} ${accounts.length === 1 ? "cuenta" : "cuentas"}`}
+                    description={
+                        totals.hasMultipleCurrencies
+                            ? `En ${totals.baseCurrency} · ${accounts.length} cuentas`
+                            : `En ${accounts.length} ${accounts.length === 1 ? "cuenta" : "cuentas"}`
+                    }
                     tone="primary"
                     icon={<DollarSign className="h-full w-full" />}
                 />
@@ -157,7 +159,7 @@ function DashboardPage() {
                     compactOnMobile
                     title="Gastos del Mes"
                     value={loading ? "—" : money(monthlyExpenses)}
-                    description="Mes actual"
+                    description="Confirmados · sin transferencias"
                     tone="destructive"
                     icon={<TrendingDown className="h-full w-full" />}
                 />
@@ -294,8 +296,16 @@ function DashboardPage() {
                         <div className="space-y-2 sm:space-y-4">
                             {recentActivity.map((item) => {
                                 const isIncome = item.type === "income";
-                                const sign = isIncome ? "+" : item.type === "expense" ? "-" : "";
-                                const name = item.description?.trim() || categoryName(item.categoryId);
+                                const isTransfer = item.type === "transfer";
+                                const sign = isIncome ? "+" : isTransfer ? "" : "-";
+                                const currency =
+                                    accounts.find((a) => a.id === item.accountId)?.currency ?? totals.baseCurrency;
+                                const name = isTransfer
+                                    ? `${accountName(item.accountId)} → ${accountName(item.transferAccountId)}`
+                                    : item.description?.trim() || categoryName(item.categoryId);
+                                const subtitle = isTransfer
+                                    ? "Transferencia"
+                                    : categoryName(item.categoryId);
                                 return (
                                     <div
                                         key={item.id}
@@ -312,11 +322,15 @@ function DashboardPage() {
                                                 p-1.5 sm:p-2 rounded-md sm:rounded-lg flex-shrink-0
                                                 ${isIncome
                                                     ? "bg-success/10 text-success"
-                                                    : "bg-destructive/10 text-destructive"
+                                                    : isTransfer
+                                                      ? "bg-muted text-foreground"
+                                                      : "bg-destructive/10 text-destructive"
                                                 }
                                             `}>
                                                 {isIncome ? (
                                                     <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
+                                                ) : isTransfer ? (
+                                                    <ArrowLeftRight className="w-4 h-4 sm:w-5 sm:h-5" />
                                                 ) : (
                                                     <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5" />
                                                 )}
@@ -324,16 +338,16 @@ function DashboardPage() {
                                             <div className="min-w-0 flex-1">
                                                 <p className="text-sm sm:text-base font-medium text-foreground truncate">{name}</p>
                                                 <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                                                    <span>{categoryName(item.categoryId)}</span>
+                                                    <span>{subtitle}</span>
                                                     <span className="hidden sm:inline"> • {relTime(item.date)}</span>
                                                 </p>
                                             </div>
                                         </div>
                                         <span className={`
                                             text-sm sm:text-base font-semibold flex-shrink-0 ml-2
-                                            ${isIncome ? "text-success" : "text-destructive"}
+                                            ${isIncome ? "text-success" : isTransfer ? "text-foreground" : "text-destructive"}
                                         `}>
-                                            {sign}{money(item.amount)}
+                                            {sign}{formatCurrency(item.amount, currency)}
                                         </span>
                                     </div>
                                 );

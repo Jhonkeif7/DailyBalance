@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import * as reportsService from "@/services/reports.service";
+import * as financeService from "@/services/finance.service";
+import { getUsdExchangeRates } from "@/services/exchange-rate.service";
+import {
+    buildExpensesByCategory,
+    buildMonthlyFinanceSummary,
+    pickBaseCurrency,
+    type ExchangeRatesMap,
+} from "@/pages/finance/finance-calc";
+import { formatCurrency, currentMonth } from "@/pages/finance/finance-utils";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/Card";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { StatCard } from "@/components/ui/StatCard";
@@ -56,8 +65,8 @@ interface ProductivityRow {
     total: number;
 }
 
-const currencyFmt = (n: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+let reportBaseCurrency = "USD";
+const currencyFmt = (n: number) => formatCurrency(n, reportBaseCurrency);
 
 // Componente de gráfico de barras
 function BarChartComponent({ data }: { data: MonthlyRow[] }) {
@@ -223,18 +232,41 @@ const ReportPage = () => {
     const [monthly, setMonthly] = useState<reportsService.MonthlyFinanceSummary[]>([]);
     const [expenses, setExpenses] = useState<reportsService.ExpenseByCategory[]>([]);
     const [daily, setDaily] = useState<reportsService.DailyProductivity[]>([]);
+    const [baseCurrency, setBaseCurrency] = useState("USD");
     const [, setLoading] = useState(true);
 
     useEffect(() => {
         let active = true;
         (async () => {
             try {
-                const [m, e, d] = await Promise.all([
-                    reportsService.getMonthlyFinanceSummary(),
-                    reportsService.getExpensesByCategory(),
+                const [accounts, transactions, categories, d, rateData] = await Promise.all([
+                    financeService.getAccounts(),
+                    financeService.getTransactions(),
+                    financeService.getCategories(),
                     reportsService.getDailyProductivity(),
+                    getUsdExchangeRates().catch(() => null),
                 ]);
                 if (!active) return;
+
+                const rates: ExchangeRatesMap | null = rateData?.rates ?? null;
+                const base = pickBaseCurrency(accounts);
+                reportBaseCurrency = base;
+                setBaseCurrency(base);
+
+                const m = buildMonthlyFinanceSummary(transactions, accounts, rates, base);
+                const catMeta = new Map(
+                    categories.map((c) => [c.id, { name: c.name, color: c.color }])
+                );
+                // Gastos del mes actual (confirmados, sin transferencias, convertidos).
+                const e = buildExpensesByCategory(
+                    transactions,
+                    accounts,
+                    catMeta,
+                    rates,
+                    base,
+                    currentMonth()
+                );
+
                 setMonthly(m);
                 setExpenses(e);
                 setDaily(d);
@@ -249,6 +281,10 @@ const ReportPage = () => {
             active = false;
         };
     }, []);
+
+    useEffect(() => {
+        reportBaseCurrency = baseCurrency;
+    }, [baseCurrency]);
 
     // Etiqueta de mes legible a partir de "2026-01" o fecha ISO.
     const monthLabel = (month: string) => {

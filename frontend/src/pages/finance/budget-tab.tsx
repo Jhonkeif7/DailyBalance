@@ -18,11 +18,12 @@ import { DollarSign, Bell, Check, Plus, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog"
 import type { Category, Budget } from "./currency-tab"
-import { formatNumber, resolveCategoryIcon } from "./finance-utils"
+import { formatCurrency, currentMonth, resolveCategoryIcon } from "./finance-utils"
 
 interface BudgetTabProps {
   categories: Category[]
   budgets: Budget[]
+  baseCurrency: string
   upsertBudget: (budget: Budget) => Promise<void>
   deleteBudget: (id: string) => Promise<void>
   getBudgetPercentage: (budget: Budget) => number
@@ -35,18 +36,18 @@ interface BudgetForm {
   period: string
 }
 
-const currentMonth = () => new Date().toISOString().slice(0, 7)
-
 const emptyForm: BudgetForm = { categoryId: "", amount: "", period: currentMonth() }
 
 function BudgetTab({
   categories,
   budgets,
+  baseCurrency,
   upsertBudget,
   deleteBudget,
   getBudgetPercentage,
   getBudgetStatus,
 }: BudgetTabProps) {
+  const expenseCategories = categories.filter((c) => c.type === "expense" || c.type === "both")
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Budget | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Budget | null>(null)
@@ -147,7 +148,8 @@ function BudgetTab({
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium">{budgetName}</p>
                           <p className="text-xs text-muted-foreground" style={{ fontVariantNumeric: "tabular-nums" }}>
-                            ${formatNumber(budget.spent)} de ${formatNumber(budget.amount)}
+                            {formatCurrency(budget.spent, baseCurrency)} de{" "}
+                            {formatCurrency(budget.amount, baseCurrency)}
                           </p>
                         </div>
                       </div>
@@ -221,7 +223,7 @@ function BudgetTab({
                   <SelectValue placeholder="Seleccionar…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((cat) => (
+                  {expenseCategories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
                     </SelectItem>
@@ -254,7 +256,8 @@ function BudgetTab({
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              El gasto se calcula automáticamente a partir de tus movimientos.
+              Solo categorías de gasto. El gasto del mes se calcula con movimientos confirmados
+              (las transferencias entre tus cuentas no cuentan). Montos en {baseCurrency}.
             </p>
           </div>
 
